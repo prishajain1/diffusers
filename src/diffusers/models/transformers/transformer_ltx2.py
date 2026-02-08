@@ -576,12 +576,12 @@ class LTX2VideoTransformerBlock(nn.Module):
             video_per_layer_ca_scale_shift[:, :, ...].to(temb_ca_scale_shift.dtype)
             + temb_ca_scale_shift.reshape(batch_size, temb_ca_scale_shift.shape[1], 4, -1)
         ).unbind(dim=2)
-        print_shape("video_ca_scale_shift_table_unbind[0]", video_ca_scale_shift_table_unbind[0])
+        print_shape("video_ca_scale_shift_table[0]", video_ca_scale_shift_table[0])
         video_ca_gate = (
             video_per_layer_ca_gate[:, :, ...].to(temb_ca_gate.dtype)
             + temb_ca_gate.reshape(batch_size, temb_ca_gate.shape[1], 1, -1)
         ).unbind(dim=2)
-        print_shape("video_ca_gate_unbind[0]", video_ca_gate_unbind[0])
+        print_shape("video_ca_gate[0]", video_ca_gate[0])
 
         video_a2v_ca_scale, video_a2v_ca_shift, video_v2a_ca_scale, video_v2a_ca_shift = video_ca_scale_shift_table
         print_shape("video_a2v_ca_scale", video_a2v_ca_scale)

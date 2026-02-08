@@ -34,7 +34,7 @@ class LTX2ParityTest(unittest.TestCase):
             patch_size=self.patch_size,
             patch_size_t=self.patch_size_t,
             num_attention_heads=2,
-            attention_head_dim=8, 
+            attention_head_dim=16, 
             num_layers=1,
             caption_channels=self.caption_channels,
             cross_attention_dim=self.cross_attention_dim,

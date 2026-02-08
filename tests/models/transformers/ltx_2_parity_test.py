@@ -41,7 +41,7 @@ class LTX2ParityTest(unittest.TestCase):
             audio_in_channels=self.audio_in_channels,
             audio_out_channels=self.audio_in_channels,
             audio_num_attention_heads=2,
-            audio_attention_head_dim=8,
+            audio_attention_head_dim=16,
             audio_cross_attention_dim=self.audio_cross_attention_dim,
             attention_bias=True,
             attention_out_bias=True,

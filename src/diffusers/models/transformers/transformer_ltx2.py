@@ -658,7 +658,7 @@ class LTX2VideoTransformerBlock(nn.Module):
 
         # 4. Feedforward
         norm_hidden_states = self.norm3(hidden_states) * (1 + scale_mlp) + shift_mlp
-        print_shape("mod_norm_hidden_states (FF)", mod_norm_hidden_states_ff)
+        print_shape("mod_norm_hidden_states (FF)", norm_hidden_states)
         ff_output = self.ff(norm_hidden_states)
         print_shape("ff_output", ff_output)
         hidden_states = hidden_states + ff_output * gate_mlp

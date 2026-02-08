@@ -599,12 +599,12 @@ class LTX2VideoTransformerBlock(nn.Module):
             audio_per_layer_ca_scale_shift[:, :, ...].to(temb_ca_audio_scale_shift.dtype)
             + temb_ca_audio_scale_shift.reshape(batch_size, temb_ca_audio_scale_shift.shape[1], 4, -1)
         ).unbind(dim=2)
-        print_shape("audio_ca_scale_shift_table_unbind[0]", audio_ca_scale_shift_table_unbind[0])
+        print_shape("audio_ca_scale_shift_table[0]", audio_ca_scale_shift_table[0])
         audio_ca_gate = (
             audio_per_layer_ca_gate[:, :, ...].to(temb_ca_audio_gate.dtype)
             + temb_ca_audio_gate.reshape(batch_size, temb_ca_audio_gate.shape[1], 1, -1)
         ).unbind(dim=2)
-        print_shape("audio_ca_gate_unbind[0]", audio_ca_gate_unbind[0])
+        print_shape("audio_ca_gate[0]", audio_ca_gate[0])
 
         audio_a2v_ca_scale, audio_a2v_ca_shift, audio_v2a_ca_scale, audio_v2a_ca_shift = audio_ca_scale_shift_table
         print_shape("audio_a2v_ca_scale", audio_a2v_ca_scale)

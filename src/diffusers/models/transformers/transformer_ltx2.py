@@ -618,11 +618,11 @@ class LTX2VideoTransformerBlock(nn.Module):
         mod_norm_hidden_states = norm_hidden_states * (1 + video_a2v_ca_scale.squeeze(2)) + video_a2v_ca_shift.squeeze(
             2
         )
-        print_shape("mod_norm_hidden_states_a2v", mod_norm_hidden_states_a2v)
+        print_shape("mod_norm_hidden_states_a2v", mod_norm_hidden_states)
         mod_norm_audio_hidden_states = norm_audio_hidden_states * (
             1 + audio_a2v_ca_scale.squeeze(2)
         ) + audio_a2v_ca_shift.squeeze(2)
-        print_shape("mod_norm_audio_hidden_states_a2v", mod_norm_audio_hidden_states_a2v)
+        print_shape("mod_norm_audio_hidden_states_a2v", mod_norm_audio_hidden_states)
 
         a2v_attn_hidden_states = self.audio_to_video_attn(
             mod_norm_hidden_states,
@@ -639,11 +639,11 @@ class LTX2VideoTransformerBlock(nn.Module):
         mod_norm_hidden_states = norm_hidden_states * (1 + video_v2a_ca_scale.squeeze(2)) + video_v2a_ca_shift.squeeze(
             2
         )
-        print_shape("mod_norm_hidden_states_v2a", mod_norm_hidden_states_v2a)
+        print_shape("mod_norm_hidden_states_v2a", mod_norm_hidden_states)
         mod_norm_audio_hidden_states = norm_audio_hidden_states * (
             1 + audio_v2a_ca_scale.squeeze(2)
         ) + audio_v2a_ca_shift.squeeze(2)
-        print_shape("mod_norm_audio_hidden_states_v2a", mod_norm_audio_hidden_states_v2a)
+        print_shape("mod_norm_audio_hidden_states_v2a", mod_norm_audio_hidden_states)
 
         v2a_attn_hidden_states = self.video_to_audio_attn(
             mod_norm_audio_hidden_states,

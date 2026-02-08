@@ -1,9 +1,9 @@
 import torch
 import unittest
 import sys
-# Make sure we can import from src if running from repo root
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), "../../../../src"))
+# Make sure we can import from src if running from repo root
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../src")))
 
 from diffusers.models.transformers.transformer_ltx2 import LTX2VideoTransformer3DModel
 

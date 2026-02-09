@@ -86,7 +86,6 @@ class LTX2ParityTest(unittest.TestCase):
                 num_frames=self.num_frames,
                 height=self.height,
                 width=self.width,
-                width=self.width,
                 audio_num_frames=128, 
                 fps=24.0,
                 return_dict=True,

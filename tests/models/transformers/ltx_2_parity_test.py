@@ -33,15 +33,15 @@ class LTX2ParityTest(unittest.TestCase):
             out_channels=self.out_channels,
             patch_size=self.patch_size,
             patch_size_t=self.patch_size_t,
-            num_attention_heads=2,
-            attention_head_dim=16, 
+            num_attention_heads=8,
+            attention_head_dim=128, 
             num_layers=1,
             caption_channels=self.caption_channels,
             cross_attention_dim=self.cross_attention_dim,
             audio_in_channels=self.audio_in_channels,
             audio_out_channels=self.audio_in_channels,
-            audio_num_attention_heads=2,
-            audio_attention_head_dim=16,
+            audio_num_attention_heads=8,
+            audio_attention_head_dim=128,
             audio_cross_attention_dim=self.audio_cross_attention_dim,
             attention_bias=True,
             attention_out_bias=True,
@@ -61,7 +61,7 @@ class LTX2ParityTest(unittest.TestCase):
         )
         
         # Audio sequence length is fixed in test setup to 10 frames usually
-        audio_seq_len = 10 
+        audio_seq_len = 128 
         audio_hidden_states = torch.zeros(
             (self.batch_size, audio_seq_len, self.audio_in_channels), 
             device=self.device
@@ -69,12 +69,12 @@ class LTX2ParityTest(unittest.TestCase):
         
         timestep = torch.tensor([1.0], device=self.device)
         # encoder_hidden_states has caption_channels dim
-        encoder_hidden_states = torch.zeros((self.batch_size, 5, self.caption_channels), device=self.device)
-        audio_encoder_hidden_states = torch.zeros((self.batch_size, 5, self.caption_channels), device=self.device)
+        encoder_hidden_states = torch.zeros((self.batch_size, 128, self.caption_channels), device=self.device)
+        audio_encoder_hidden_states = torch.zeros((self.batch_size, 128, self.caption_channels), device=self.device)
         
         # Need attention masks? Usually optional.
-        encoder_attention_mask = torch.ones((self.batch_size, 5), device=self.device)
-        audio_encoder_attention_mask = torch.ones((self.batch_size, 5), device=self.device)
+        encoder_attention_mask = torch.ones((self.batch_size, 128), device=self.device)
+        audio_encoder_attention_mask = torch.ones((self.batch_size, 128), device=self.device)
         
         with torch.no_grad():
             output = self.model(
@@ -86,7 +86,8 @@ class LTX2ParityTest(unittest.TestCase):
                 num_frames=self.num_frames,
                 height=self.height,
                 width=self.width,
-                audio_num_frames=10, 
+                width=self.width,
+                audio_num_frames=128, 
                 fps=24.0,
                 return_dict=True,
                 encoder_attention_mask=encoder_attention_mask,

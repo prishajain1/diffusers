@@ -23,8 +23,8 @@ class LTX2ParityTest(unittest.TestCase):
         
         # LTX-2 specific params
         self.caption_channels = 32
-        self.cross_attention_dim = 32
-        self.audio_cross_attention_dim = 32
+        self.cross_attention_dim = 1024
+        self.audio_cross_attention_dim = 1024
         
         self.device = "cpu" 
         

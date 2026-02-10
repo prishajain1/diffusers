@@ -103,5 +103,69 @@ class LTX2ParityTest(unittest.TestCase):
         self.assertEqual(sample.shape, hidden_states.shape)
         self.assertEqual(audio_sample.shape, audio_hidden_states.shape)
 
+    def test_export_parity_data(self):
+        """
+        Exports the model state_dict and inputs/outputs for parity testing with MaxDiffusion.
+        """
+        print("\n=== Exporting Parity Data ===")
+        # 1. Initialize logic matches setUp but ensuring deterministic(ish) state if needed
+        # We use the existing self.model which is already initialized with random weights
+        
+        # 2. Prepare Inputs (same as other tests)
+        hidden_states = torch.randn(self.batch_size, self.in_channels, self.num_frames, self.height, self.width).to(self.device).to(torch.float32)
+        audio_hidden_states = torch.randn(self.batch_size, self.audio_in_channels, 1, 128).to(self.device).to(torch.float32)
+        encoder_hidden_states = torch.randn(self.batch_size, 128, self.caption_channels).to(self.device).to(torch.float32)
+        audio_encoder_hidden_states = torch.randn(self.batch_size, 128, self.caption_channels).to(self.device).to(torch.float32)
+        
+        encoder_attention_mask = torch.ones(self.batch_size, 128).to(self.device).to(torch.int64)
+        audio_encoder_attention_mask = torch.ones(self.batch_size, 128).to(self.device).to(torch.int64)
+        
+        timestep = torch.tensor([1.0]).to(self.device).to(torch.float32)
+        
+        # 3. Forward Pass
+        with torch.no_grad():
+            output = self.model(
+                hidden_states=hidden_states,
+                audio_hidden_states=audio_hidden_states,
+                encoder_hidden_states=encoder_hidden_states,
+                audio_encoder_hidden_states=audio_encoder_hidden_states,
+                timestep=timestep,
+                encoder_attention_mask=encoder_attention_mask,
+                audio_encoder_attention_mask=audio_encoder_attention_mask,
+                return_dict=True
+            )
+        
+        # 4. Save Data
+        parity_data = {
+            "state_dict": self.model.state_dict(),
+            "inputs": {
+                "hidden_states": hidden_states,
+                "audio_hidden_states": audio_hidden_states,
+                "encoder_hidden_states": encoder_hidden_states,
+                "audio_encoder_hidden_states": audio_encoder_hidden_states,
+                "timestep": timestep,
+                "encoder_attention_mask": encoder_attention_mask,
+                "audio_encoder_attention_mask": audio_encoder_attention_mask
+            },
+            "outputs": {
+                "sample": output.sample,
+                "audio_sample": output.audio_sample
+            },
+            "config": {
+                "in_channels": self.in_channels,
+                "out_channels": self.out_channels,
+                "patch_size": self.patch_size,
+                "head_dim": 128,
+                "inner_dim": 1024,
+                "caption_channels": self.caption_channels
+            }
+        }
+        
+        save_path = "ltx2_parity_data.pt"
+        torch.save(parity_data, save_path)
+        print(f"Saved parity data to {save_path}")
+        print(f"Sample output mean: {output.sample.mean().item()}")
+        print(f"Sample output std: {output.sample.std().item()}")
+
 if __name__ == "__main__":
     unittest.main()

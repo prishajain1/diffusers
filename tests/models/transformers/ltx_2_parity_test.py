@@ -144,6 +144,16 @@ class LTX2ParityTest(unittest.TestCase):
                 return_dict=True
             )
         
+        print(f"Diffusers Sample Max: {output.sample.max()}")
+        print(f"Diffusers Sample Min: {output.sample.min()}")
+        print(f"Diffusers Sample Mean: {output.sample.mean()}")
+        print(f"Diffusers Sample Std: {output.sample.std()}")
+        
+        print(f"Diffusers Audio Max: {output.audio_sample.max()}")
+        print(f"Diffusers Audio Min: {output.audio_sample.min()}")
+        print(f"Diffusers Audio Mean: {output.audio_sample.mean()}")
+        print(f"Diffusers Audio Std: {output.audio_sample.std()}")
+        
         # 4. Save Data
         parity_data = {
             "state_dict": self.model.state_dict(),

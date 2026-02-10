@@ -132,6 +132,9 @@ class LTX2ParityTest(unittest.TestCase):
                 timestep=timestep,
                 encoder_attention_mask=encoder_attention_mask,
                 audio_encoder_attention_mask=audio_encoder_attention_mask,
+                num_frames=self.num_frames,
+                height=self.height,
+                width=self.width,
                 return_dict=True
             )
         

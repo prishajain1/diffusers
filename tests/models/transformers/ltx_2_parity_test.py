@@ -112,8 +112,13 @@ class LTX2ParityTest(unittest.TestCase):
         # We use the existing self.model which is already initialized with random weights
         
         # 2. Prepare Inputs (same as other tests)
-        hidden_states = torch.randn(self.batch_size, self.in_channels, self.num_frames, self.height, self.width).to(self.device).to(torch.float32)
-        audio_hidden_states = torch.randn(self.batch_size, self.audio_in_channels, 1, 128).to(self.device).to(torch.float32)
+        # Flattened inputs required for LTX2VideoTransformer3DModel
+        seq_len = (self.num_frames // self.patch_size_t) * (self.height // self.patch_size) * (self.width // self.patch_size)
+        hidden_states = torch.randn(self.batch_size, seq_len, self.in_channels).to(self.device).to(torch.float32)
+        
+        audio_seq_len = 128
+        audio_hidden_states = torch.randn(self.batch_size, audio_seq_len, self.audio_in_channels).to(self.device).to(torch.float32)
+        
         encoder_hidden_states = torch.randn(self.batch_size, 128, self.caption_channels).to(self.device).to(torch.float32)
         audio_encoder_hidden_states = torch.randn(self.batch_size, 128, self.caption_channels).to(self.device).to(torch.float32)
         

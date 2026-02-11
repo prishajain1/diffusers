@@ -45,7 +45,7 @@ class LTX2ParityTest(unittest.TestCase):
             audio_cross_attention_dim=self.audio_cross_attention_dim,
             attention_bias=True,
             attention_out_bias=True,
-            rope_type="split",
+            rope_type="interleaved",
         )
         self.model.to(self.device).eval()
         

@@ -339,6 +339,21 @@ class LTX2ParityTest(unittest.TestCase):
         
         print("\n=== Input Verification (Split) ===")
         print(f"Hidden States Sum: {hidden_states.sum().item()}")
+        print(f"Audio Hidden States Sum: {audio_hidden_states.sum().item()}")
+        print(f"Encoder Hidden States Sum: {encoder_hidden_states.sum().item()}")
+        print(f"Audio Encoder Hidden States Sum: {audio_encoder_hidden_states.sum().item()}")
+        print(f"Timestep: {timestep.item()}")
+        print("==========================\n")
+        
+        print(f"Diffusers Sample Max: {output.sample.max()}")
+        print(f"Diffusers Sample Min: {output.sample.min()}")
+        print(f"Diffusers Sample Mean: {output.sample.mean()}")
+        print(f"Diffusers Sample Std: {output.sample.std()}")
+        
+        print(f"Diffusers Audio Max: {output.audio_sample.max()}")
+        print(f"Diffusers Audio Min: {output.audio_sample.min()}")
+        print(f"Diffusers Audio Mean: {output.audio_sample.mean()}")
+        print(f"Diffusers Audio Std: {output.audio_sample.std()}")
         
         # Save Data
         parity_data = {

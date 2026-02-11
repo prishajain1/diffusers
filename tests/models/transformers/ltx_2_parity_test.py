@@ -280,6 +280,7 @@ class LTX2ParityTest(unittest.TestCase):
             )
 
         print(f"Diffusers Output Video Shape (Split): {output.sample.shape}")
+        print(f"Diffusers Output Audio Shape (Split): {output.audio_sample.shape}")
         self.assertEqual(output.sample.shape, hidden_states.shape)
         self.assertEqual(output.audio_sample.shape, audio_hidden_states.shape)
 

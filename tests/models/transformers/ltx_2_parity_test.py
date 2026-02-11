@@ -45,6 +45,7 @@ class LTX2ParityTest(unittest.TestCase):
             audio_cross_attention_dim=self.audio_cross_attention_dim,
             attention_bias=True,
             attention_out_bias=True,
+            rope_type="split",
         )
         self.model.to(self.device).eval()
         
@@ -174,7 +175,6 @@ class LTX2ParityTest(unittest.TestCase):
                 width=self.width,
                 audio_num_frames=128,
                 return_dict=True,
-                rope_type="split"
             )
         
         print("\n=== Input Verification ===")

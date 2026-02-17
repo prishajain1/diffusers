@@ -797,7 +797,7 @@ class LTXVideoEncoder3d(nn.Module):
             else:
                 output_channel = block_out_channels[i + 1]
 
-            if down_block_types[i] == "LTXVideoDownBlock3D":
+            if down_block_types[i] == "LTXVideoDownBlock3D" or down_block_types[i] == "LTX2VideoDownBlock3D":
                 down_block = LTXVideoDownBlock3D(
                     in_channels=input_channel,
                     out_channels=output_channel,

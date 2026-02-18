@@ -77,6 +77,14 @@ def main():
         latents_tiled = model.encode(sample_spatial).latent_dist.mode()
         reconstruction_tiled = model.decode(latents_tiled).sample
         
+    print(f"\n--- Tiled Encoder Latents ---")
+    print(f"Shape: {latents_tiled.shape}")
+    print(f"Mean: {latents_tiled.mean().item():.6f}, Std: {latents_tiled.std().item():.6f}")
+    
+    print(f"\n--- Tiled Decoder Output ---")
+    print(f"Shape: {reconstruction_tiled.shape}")
+    print(f"Mean: {reconstruction_tiled.mean().item():.6f}, Std: {reconstruction_tiled.std().item():.6f}")
+        
     model.disable_tiling()
     
     # Temporal Tiled Passes
@@ -99,6 +107,14 @@ def main():
         latents_temporal_tiled = model.encode(sample_temporal).latent_dist.mode()
         reconstruction_temporal_tiled = model.decode(latents_temporal_tiled).sample
 
+    print(f"\n--- Temporal Tiled Encoder Latents ---")
+    print(f"Shape: {latents_temporal_tiled.shape}")
+    print(f"Mean: {latents_temporal_tiled.mean().item():.6f}, Std: {latents_temporal_tiled.std().item():.6f}")
+    
+    print(f"\n--- Temporal Tiled Decoder Output ---")
+    print(f"Shape: {reconstruction_temporal_tiled.shape}")
+    print(f"Mean: {reconstruction_temporal_tiled.mean().item():.6f}, Std: {reconstruction_temporal_tiled.std().item():.6f}")
+
     # Save to disk for MaxDiffusion
     save_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "ltx2_parity_data"))
     os.makedirs(save_dir, exist_ok=True)
@@ -109,6 +125,7 @@ def main():
     
     # Save Input and Outputs for comparison
     np.save(os.path.join(save_dir, "input.npy"), sample.numpy())
+    np.save(os.path.join(save_dir, "input_spatial.npy"), sample_spatial.numpy())
     np.save(os.path.join(save_dir, "latents.npy"), latents.numpy())
     np.save(os.path.join(save_dir, "reconstruction.npy"), reconstruction.numpy())
     

@@ -82,7 +82,7 @@ def main():
     # Temporal Tiled Passes
     print("\nRunning Temporal Tiled Encoder/Decoder Passes...")
     # temporal_compression_ratio = patch_size_t(1) * 2^(4 downblocks) = 16
-    model.tile_sample_min_num_frames = 33 
+    model.tile_sample_min_num_frames = 32
     model.tile_sample_stride_num_frames = 16
     model.use_framewise_decoding = True
     

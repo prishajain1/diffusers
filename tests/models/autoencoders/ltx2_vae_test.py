@@ -161,12 +161,12 @@ class LTX2VaeTest(unittest.TestCase):
             decoder_layers_per_block=(2, 2, 2),
             patch_size=2,
             patch_size_t=1,
-            # Tiling boundaries natively
-            tile_sample_min_height=32,
-            tile_sample_min_width=32,
-            tile_latent_min_height=4,  # 32 / 8 spatial downsample
-            tile_latent_min_width=4,   # 32 / 8 spatial downsample
         )
+        # Tiling boundaries natively
+        vae.tile_sample_min_height = 32
+        vae.tile_sample_min_width = 32
+        vae.tile_latent_min_height = 4  # 32 / 8 spatial downsample
+        vae.tile_latent_min_width = 4   # 32 / 8 spatial downsample
         vae.enable_tiling()
         
         # We need a large spatial dimensional mock video (B=1, C=3, T=9, H=64, W=64)
@@ -200,10 +200,10 @@ class LTX2VaeTest(unittest.TestCase):
             decoder_layers_per_block=(2, 2, 2),
             patch_size=2,
             patch_size_t=1,
-            # Temporal boundaries natively
-            tile_sample_min_num_frames=9,
-            tile_latent_min_num_frames=5, # 9 -> 5 causal block logic
         )
+        # Temporal boundaries natively
+        vae.tile_sample_min_num_frames = 9
+        vae.tile_latent_min_num_frames = 5 # 9 -> 5 causal block logic
         vae.use_framewise_decoding = True  # Activates _temporal_tiled loops natively
         
         # Temporal frames T=17 natively overrides `min_num_frames=9` activating chunk loops

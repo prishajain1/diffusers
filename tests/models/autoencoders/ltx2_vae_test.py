@@ -70,7 +70,7 @@ class LTX2VaeTest(unittest.TestCase):
             resnet_eps=1e-6,
             spatio_temporal_scale=True,
             upsample_residual=False,
-            upscale_factor=2
+            upscale_factor=1
         )
         
         # MaxDiffusion passes a (B, T, H, W, C) where `T=3`. To match PyTorch's `(B, C, T, H, W)`

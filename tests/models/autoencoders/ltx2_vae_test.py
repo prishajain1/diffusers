@@ -72,6 +72,7 @@ class LTX2VaeTest(unittest.TestCase):
         )
         
         # (B, C, T, H, W) -> T should remain 3, HW should double from 8 to 16
+        # The input dummy should match `in_channels`
         dummy_input = torch.ones((1, in_channels, 3, 8, 8))
         out = upsampler(dummy_input)
         
@@ -93,10 +94,10 @@ class LTX2VaeTest(unittest.TestCase):
         
         # Verify splits
         self.assertEqual(dist.mean.shape, (B, 128, T, H, W))
-        self.assertEqual(dist.logvar.shape, (B, 1, T, H, W))
+        self.assertEqual(dist.logvar.shape, (B, 128, T, H, W))
         
-        # Logvar mathematically broadcasts to variance during sampling, but retains C=1 in explicit var property
-        self.assertEqual(dist.var.shape, (B, 1, T, H, W))
+        # Logvar mathematically broadcasts to variance during sampling
+        self.assertEqual(dist.var.shape, (B, 128, T, H, W))
         
         # Sampling should return matching shapes
         sample = dist.sample()

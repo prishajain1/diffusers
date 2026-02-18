@@ -202,14 +202,17 @@ class LTX2VaeTest(unittest.TestCase):
             decoder_spatio_temporal_scaling=(True, True)
         )
         # Temporal compression natively = 1 * 2**2 = 4
-        # Temporal tiling needs to respect `(num_frames - 1) // 4 + 1` safely
-        vae.tile_sample_min_num_frames = 9 # Valid chunk
-        vae.tile_sample_stride_num_frames = 4
-        vae.tile_latent_min_num_frames = 2 # 9 // 4 + 1
-        vae.tile_latent_stride_num_frames = 1
+        # Temporal boundaries natively
+        # The total temporal stride down is `4` (2 * 2**1 blocks) based on `decoder_spatio_temporal_scaling`.
+        # Meaning the padding requires minimum blocks strictly divisible into chunks mathematically scaling without offset residues padding errors.
+        vae.tile_sample_min_num_frames = 17 # Must be (multiples of 4) + 1 to avoid unflatten remainder errors e.g 4*4 + 1
+        vae.tile_sample_stride_num_frames = 8
+        vae.tile_latent_min_num_frames = 5 # 17 // 4 + 1
+        vae.tile_latent_stride_num_frames = 2 # 8 // 4
         vae.use_framewise_decoding = True  
         
-        B, C, T, H, W = 1, 3, 17, 16, 16
+        # Test 2 chunks: length = stride * chunks + overlap
+        B, C, T, H, W = 1, 3, 25, 16, 16
         dummy_video = torch.ones((B, C, T, H, W))
         
         encoded_dist = vae.encode(dummy_video).latent_dist

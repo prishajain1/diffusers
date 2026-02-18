@@ -10,9 +10,9 @@ from diffusers.models.autoencoders.autoencoder_kl_ltx2 import (
     LTX2VideoCausalConv3d,
     LTX2VideoDownBlock3D,
     LTX2VideoUpBlock3d,
-    AutoencoderKLLTX2Video,
-    LTX2DiagonalGaussianDistribution
+    AutoencoderKLLTX2Video
 )
+from diffusers.models.autoencoders.vae import DiagonalGaussianDistribution
 
 class LTX2VaeTest(unittest.TestCase):
     
@@ -92,7 +92,7 @@ class LTX2VaeTest(unittest.TestCase):
         parameters[:, :128, ...] = 0.5 # Set mean to 0.5
         parameters[:, 128:, ...] = 1.0 # Set logvar to 1.0
         
-        dist = LTX2DiagonalGaussianDistribution(parameters, latent_channels=latent_channels)
+        dist = DiagonalGaussianDistribution(parameters)
         
         # Verify splits
         self.assertEqual(dist.mean.shape, (B, 128, T, H, W))

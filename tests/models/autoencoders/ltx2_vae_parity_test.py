@@ -57,10 +57,10 @@ def main():
 
     # Tiled Passes
     print("\nRunning Tiled Encoder/Decoder Passes...")
-    model.tile_sample_min_height = 32
-    model.tile_sample_min_width = 32
-    model.tile_sample_stride_height = 16
-    model.tile_sample_stride_width = 16
+    model.tile_sample_min_height = 64
+    model.tile_sample_min_width = 64
+    model.tile_sample_stride_height = 32
+    model.tile_sample_stride_width = 32
     model.tile_latent_min_height = 2 
     model.tile_latent_min_width = 2  
     model.tile_latent_stride_height = 1

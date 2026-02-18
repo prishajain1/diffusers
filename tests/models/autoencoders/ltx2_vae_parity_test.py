@@ -1,8 +1,8 @@
 import sys
 import os
 
-# Prioritize the local git repository (../../../) over the pip-installed environment
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
+# Prioritize the local git repository (../../../src) over the pip-installed environment
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src")))
 
 import torch
 import numpy as np

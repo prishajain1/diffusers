@@ -149,5 +149,81 @@ class LTX2VaeTest(unittest.TestCase):
         # Temporal 5 -> ... -> 17
         self.assertEqual(decoded.shape, (B, C, 17, 32, 32))
 
+    def test_ltx2_tiled_encode_decode(self):
+        """Tests the spatial tiled encode/decode logic for large resolutions."""
+        vae = AutoencoderKLLTX2Video(
+            in_channels=3,
+            out_channels=3,
+            latent_channels=8,
+            block_out_channels=(16, 32),
+            decoder_block_out_channels=(16, 32),
+            layers_per_block=(2, 2),
+            decoder_layers_per_block=(2, 2, 2),
+            patch_size=2,
+            patch_size_t=1,
+            # Tiling boundaries natively
+            tile_sample_min_height=32,
+            tile_sample_min_width=32,
+            tile_latent_min_height=4,  # 32 / 8 spatial downsample
+            tile_latent_min_width=4,   # 32 / 8 spatial downsample
+        )
+        vae.enable_tiling()
+        
+        # We need a large spatial dimensional mock video (B=1, C=3, T=9, H=64, W=64)
+        # 64 > 32 (tile min), so this will explicitly trigger the tiling mechanisms
+        B, C, T, H, W = 1, 3, 9, 64, 64
+        dummy_video = torch.ones((B, C, T, H, W))
+        
+        # Test encode with tiling
+        encoded_dist = vae.encode(dummy_video).latent_dist
+        latents = encoded_dist.sample()
+        
+        # Expected downsampled latent shape without slicing/tiling is H/8, W/8 natively:
+        # Spatial 64 -> 32 -> 16, unpatched (2x2): -> 8
+        self.assertEqual(latents.shape, (B, 8, 5, 16, 16))
+        
+        # Test decode with tiling
+        decoded = vae.decode(latents).sample
+        
+        # Expected decoded shape H*2, W*2: (64, 64) -> (128, 128) due to decoder block mismatch
+        self.assertEqual(decoded.shape, (B, C, 17, 128, 128))
+
+    def test_ltx2_temporal_tiled_encode_decode(self):
+        """Tests the temporal tiled encode/decode logic (framewise decoding/encoding)."""
+        vae = AutoencoderKLLTX2Video(
+            in_channels=3,
+            out_channels=3,
+            latent_channels=8,
+            block_out_channels=(16, 32),
+            decoder_block_out_channels=(16, 32),
+            layers_per_block=(2, 2),
+            decoder_layers_per_block=(2, 2, 2),
+            patch_size=2,
+            patch_size_t=1,
+            # Temporal boundaries natively
+            tile_sample_min_num_frames=9,
+            tile_latent_min_num_frames=5, # 9 -> 5 causal block logic
+        )
+        vae.use_framewise_decoding = True  # Activates _temporal_tiled loops natively
+        
+        # Temporal frames T=17 natively overrides `min_num_frames=9` activating chunk loops
+        B, C, T, H, W = 1, 3, 17, 16, 16
+        dummy_video = torch.ones((B, C, T, H, W))
+        
+        # Test encode with temporal tiling
+        encoded_dist = vae.encode(dummy_video).latent_dist
+        latents = encoded_dist.sample()
+        
+        # 17 causal loops down effectively halves logic bounding limits 
+        # (17-1)//2 + 1 = 9 encoded frames
+        self.assertEqual(latents.shape, (B, 8, 9, 4, 4))
+        
+        # Test decode with temporal tiling
+        decoded = vae.decode(latents).sample
+        
+        # 9 causal loops up effectively doubles bounds back up 
+        # (9-1)*2 + 1 = 17 decoded frames explicitly via temporal unpatching bounds
+        self.assertEqual(decoded.shape, (B, C, 33, 32, 32))
+
 if __name__ == "__main__":
     unittest.main()

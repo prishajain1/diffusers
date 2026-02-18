@@ -6,13 +6,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 
 import torch
 import numpy as np
-from diffusers.models.autoencoders.autoencoder_kl_ltx2 import LTX2VideoAutoencoderKL
+from diffusers.models.autoencoders.autoencoder_kl_ltx2 import AutoencoderKLLTX2Video
 
 def main():
     print("Initializing Diffusers LTX-2 VAE...")
     
     # Initialize with default/small configuration
-    model = LTX2VideoAutoencoderKL(
+    model = AutoencoderKLLTX2Video(
         in_channels=3,
         out_channels=3,
         latent_channels=128,

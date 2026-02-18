@@ -58,9 +58,11 @@ class LTX2VaeTest(unittest.TestCase):
 
     def test_ltx2_video_upblock3d(self):
         """Tests the tile duplication and causal shift of LTX2VideoUpBlock3d."""
-        in_channels = 256
+        in_channels = 64
         out_channels = 32
         
+        # When in_channels != out_channels, `conv_in` maps 64 -> 32
+        # Then `LTXVideoUpsampler3d` receives 32 * upscale_factor = 256
         upsampler = LTX2VideoUpBlock3d(
             in_channels=in_channels,
             out_channels=out_channels,
@@ -72,7 +74,7 @@ class LTX2VaeTest(unittest.TestCase):
         )
         
         # (B, C, T, H, W) -> T should remain 3, HW should double from 8 to 16
-        # The input dummy should match `in_channels`
+        # Input matches `in_channels` initially
         dummy_input = torch.ones((1, in_channels, 3, 8, 8))
         out = upsampler(dummy_input)
         

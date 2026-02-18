@@ -55,6 +55,39 @@ def main():
     print(f"Shape: {reconstruction.shape}")
     print(f"Mean: {reconstruction.mean().item():.6f}, Std: {reconstruction.std().item():.6f}")
 
+    # Tiled Passes
+    print("\nRunning Tiled Encoder/Decoder Passes...")
+    model.tile_sample_min_height = 24
+    model.tile_sample_min_width = 24
+    model.tile_sample_stride_height = 16
+    model.tile_sample_stride_width = 16
+    model.tile_latent_min_height = 3 
+    model.tile_latent_min_width = 3  
+    model.tile_latent_stride_height = 2
+    model.tile_latent_stride_width = 2
+    model.enable_tiling()
+    
+    with torch.no_grad():
+        latents_tiled = model.encode(sample).latent_dist.mode()
+        reconstruction_tiled = model.decode(latents_tiled).sample
+        
+    model.disable_tiling()
+    
+    # Temporal Tiled Passes
+    print("\nRunning Temporal Tiled Encoder/Decoder Passes...")
+    model.tile_sample_min_num_frames = 17 # Must be divisible by upscale mathematically
+    model.tile_sample_stride_num_frames = 8
+    model.use_framewise_decoding = True
+    
+    # Extend sample to verify temporal tiling logic
+    B, C, T, H, W = 1, 3, 25, 32, 32
+    torch.manual_seed(42)
+    sample_temporal = torch.rand((B, C, T, H, W)) * 2.0 - 1.0
+    
+    with torch.no_grad():
+        latents_temporal_tiled = model.encode(sample_temporal).latent_dist.mode()
+        reconstruction_temporal_tiled = model.decode(latents_temporal_tiled).sample
+
     # Save to disk for MaxDiffusion
     save_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "ltx2_parity_data"))
     os.makedirs(save_dir, exist_ok=True)
@@ -67,6 +100,13 @@ def main():
     np.save(os.path.join(save_dir, "input.npy"), sample.numpy())
     np.save(os.path.join(save_dir, "latents.npy"), latents.numpy())
     np.save(os.path.join(save_dir, "reconstruction.npy"), reconstruction.numpy())
+    
+    np.save(os.path.join(save_dir, "latents_tiled.npy"), latents_tiled.numpy())
+    np.save(os.path.join(save_dir, "reconstruction_tiled.npy"), reconstruction_tiled.numpy())
+    
+    np.save(os.path.join(save_dir, "input_temporal.npy"), sample_temporal.numpy())
+    np.save(os.path.join(save_dir, "latents_temporal_tiled.npy"), latents_temporal_tiled.numpy())
+    np.save(os.path.join(save_dir, "reconstruction_temporal_tiled.npy"), reconstruction_temporal_tiled.numpy())
     print("Done!")
 
 if __name__ == "__main__":

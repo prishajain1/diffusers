@@ -1,6 +1,11 @@
+import sys
+import os
+
+# Prioritize the local git repository (../../../) over the pip-installed environment
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
+
 import torch
 import numpy as np
-import os
 from diffusers.models.autoencoders.autoencoder_kl_ltx2 import LTX2VideoAutoencoderKL
 
 def main():

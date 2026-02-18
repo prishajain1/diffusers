@@ -57,18 +57,24 @@ def main():
 
     # Tiled Passes
     print("\nRunning Tiled Encoder/Decoder Passes...")
-    model.tile_sample_min_height = 64
-    model.tile_sample_min_width = 64
-    model.tile_sample_stride_height = 32
-    model.tile_sample_stride_width = 32
+    # spatial_compression_ratio = patch_size(4) * 2^(4 downblocks) = 64
+    model.tile_sample_min_height = 128
+    model.tile_sample_min_width = 128
+    model.tile_sample_stride_height = 64
+    model.tile_sample_stride_width = 64
     model.tile_latent_min_height = 2 
     model.tile_latent_min_width = 2  
     model.tile_latent_stride_height = 1
     model.tile_latent_stride_width = 1
     model.enable_tiling()
     
+    # Encode test
+    B, C, T, H, W = 1, 3, 9, 128, 128
+    torch.manual_seed(42)
+    sample_spatial = torch.rand((B, C, T, H, W)) * 2.0 - 1.0
+    
     with torch.no_grad():
-        latents_tiled = model.encode(sample).latent_dist.mode()
+        latents_tiled = model.encode(sample_spatial).latent_dist.mode()
         reconstruction_tiled = model.decode(latents_tiled).sample
         
     model.disable_tiling()
@@ -80,7 +86,7 @@ def main():
     model.use_framewise_decoding = True
     
     # Extend sample to verify temporal tiling logic
-    B, C, T, H, W = 1, 3, 33, 64, 64
+    B, C, T, H, W = 1, 3, 33, 128, 128
     torch.manual_seed(42)
     sample_temporal = torch.rand((B, C, T, H, W)) * 2.0 - 1.0
     

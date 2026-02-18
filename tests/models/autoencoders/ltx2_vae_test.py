@@ -169,14 +169,14 @@ class LTX2VaeTest(unittest.TestCase):
         )
         # Tiling boundaries natively
         # Spatial compression = patch_size(2) * 2**2 = 8
-        vae.tile_sample_min_height = 16
-        vae.tile_sample_min_width = 16
-        vae.tile_sample_stride_height = 12
-        vae.tile_sample_stride_width = 12
-        vae.tile_latent_min_height = 2  # 16 / 8 spatial downsample
-        vae.tile_latent_min_width = 2   # 16 / 8 spatial downsample
-        vae.tile_latent_stride_height = 1 # 12 / 8 mathematically drops
-        vae.tile_latent_stride_width = 1
+        vae.tile_sample_min_height = 24
+        vae.tile_sample_min_width = 24
+        vae.tile_sample_stride_height = 16
+        vae.tile_sample_stride_width = 16
+        vae.tile_latent_min_height = 3  # 24 / 8 spatial downsample
+        vae.tile_latent_min_width = 3   # 24 / 8 spatial downsample
+        vae.tile_latent_stride_height = 2 # 16 / 8 mathematically drops
+        vae.tile_latent_stride_width = 2
         vae.enable_tiling()
         
         # Test encode with tiling
@@ -187,8 +187,8 @@ class LTX2VaeTest(unittest.TestCase):
         latents = encoded_dist.sample()
         
         # Spatial downsample factor is 2 * 2**2 = 8.
-        # So 32 -> 3 (clipped bounds due to trailing overlap logic)
-        self.assertEqual(latents.shape[-2:], (3, 3))
+        # So 32 -> 4 (overlapping 4x4 effectively)
+        self.assertEqual(latents.shape[-2:], (4, 4))
         
         # Test decode with tiling
         decoded = vae.decode(latents).sample

@@ -58,7 +58,7 @@ class LTX2VaeTest(unittest.TestCase):
 
     def test_ltx2_video_upblock3d(self):
         """Tests the tile duplication and causal shift of LTX2VideoUpBlock3d."""
-        in_channels = 64
+        in_channels = 256
         out_channels = 32
         
         upsampler = LTX2VideoUpBlock3d(
@@ -78,8 +78,9 @@ class LTX2VaeTest(unittest.TestCase):
         self.assertEqual(out.shape, (1, out_channels, 3, 16, 16))
 
     def test_ltx2_diagonal_gaussian_distribution(self):
-        """Tests that the custom 129-channel distribution splits and reconstructs successfully."""
-        B, C_params, T, H, W = 2, 129, 4, 8, 8
+        """Tests that the custom distribution splits and reconstructs successfully."""
+        # Diffusers splits symmetrically (latent_channels * 2)
+        B, C_params, T, H, W = 2, 256, 4, 8, 8
         latent_channels = 128
         
         # Mock moments tensor

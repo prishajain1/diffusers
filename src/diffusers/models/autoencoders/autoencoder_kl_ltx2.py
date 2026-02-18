@@ -195,7 +195,6 @@ class LTX2VideoResnetBlock3d(nn.Module):
         hidden_states = inputs
 
         hidden_states = self.norm1(hidden_states)
-        print(f"[Diffusers Resnet] After norm1: mean={hidden_states.mean().item():.6f}, std={hidden_states.std().item():.6f}")
 
         if self.scale_shift_table is not None:
             temb = temb.unflatten(1, (4, -1)) + self.scale_shift_table[None, ..., None, None, None]
@@ -204,7 +203,6 @@ class LTX2VideoResnetBlock3d(nn.Module):
 
         hidden_states = self.nonlinearity(hidden_states)
         hidden_states = self.conv1(hidden_states, causal=causal)
-        print(f"[Diffusers Resnet] After conv1: mean={hidden_states.mean().item():.6f}, std={hidden_states.std().item():.6f}")
 
         if self.per_channel_scale1 is not None:
             spatial_shape = hidden_states.shape[-2:]
@@ -214,7 +212,6 @@ class LTX2VideoResnetBlock3d(nn.Module):
             hidden_states = hidden_states + (spatial_noise * self.per_channel_scale1)[None, :, None, ...]
 
         hidden_states = self.norm2(hidden_states)
-        print(f"[Diffusers Resnet] After norm2: mean={hidden_states.mean().item():.6f}, std={hidden_states.std().item():.6f}")
 
         if self.scale_shift_table is not None:
             hidden_states = hidden_states * (1 + scale_2) + shift_2
@@ -222,7 +219,6 @@ class LTX2VideoResnetBlock3d(nn.Module):
         hidden_states = self.nonlinearity(hidden_states)
         hidden_states = self.dropout(hidden_states)
         hidden_states = self.conv2(hidden_states, causal=causal)
-        print(f"[Diffusers Resnet] After conv2: mean={hidden_states.mean().item():.6f}, std={hidden_states.std().item():.6f}")
 
         if self.per_channel_scale2 is not None:
             spatial_shape = hidden_states.shape[-2:]
@@ -238,7 +234,6 @@ class LTX2VideoResnetBlock3d(nn.Module):
             inputs = self.conv_shortcut(inputs)
 
         hidden_states = hidden_states + inputs
-        print(f"[Diffusers Resnet] After final add: mean={hidden_states.mean().item():.6f}, std={hidden_states.std().item():.6f}")
         return hidden_states
 
 
@@ -809,28 +804,21 @@ class LTX2VideoEncoder3d(nn.Module):
         # Thanks for driving me insane with the weird patching order :(
         hidden_states = hidden_states.permute(0, 1, 3, 7, 5, 2, 4, 6).flatten(1, 4)
         hidden_states = self.conv_in(hidden_states, causal=causal)
-        print(f"[Diffusers Encoder] After conv_in: shape={hidden_states.shape}, mean={hidden_states.mean().item():.6f}, std={hidden_states.std().item():.6f}")
 
         if torch.is_grad_enabled() and self.gradient_checkpointing:
             for i, down_block in enumerate(self.down_blocks):
                 hidden_states = self._gradient_checkpointing_func(down_block, hidden_states, None, None, causal)
-                print(f"[Diffusers Encoder] After down_block {i}: shape={hidden_states.shape}, mean={hidden_states.mean().item():.6f}, std={hidden_states.std().item():.6f}")
 
             hidden_states = self._gradient_checkpointing_func(self.mid_block, hidden_states, None, None, causal)
-            print(f"[Diffusers Encoder] After mid_block: shape={hidden_states.shape}, mean={hidden_states.mean().item():.6f}, std={hidden_states.std().item():.6f}")
         else:
             for i, down_block in enumerate(self.down_blocks):
                 hidden_states = down_block(hidden_states, causal=causal)
-                print(f"[Diffusers Encoder] After down_block {i}: shape={hidden_states.shape}, mean={hidden_states.mean().item():.6f}, std={hidden_states.std().item():.6f}")
 
             hidden_states = self.mid_block(hidden_states, causal=causal)
-            print(f"[Diffusers Encoder] After mid_block: shape={hidden_states.shape}, mean={hidden_states.mean().item():.6f}, std={hidden_states.std().item():.6f}")
 
         hidden_states = self.norm_out(hidden_states)
         hidden_states = self.conv_act(hidden_states)
-        print(f"[Diffusers Encoder] After norm+act: shape={hidden_states.shape}, mean={hidden_states.mean().item():.6f}, std={hidden_states.std().item():.6f}")
         hidden_states = self.conv_out(hidden_states, causal=causal)
-        print(f"[Diffusers Encoder] After conv_out: shape={hidden_states.shape}, mean={hidden_states.mean().item():.6f}, std={hidden_states.std().item():.6f}")
 
         last_channel = hidden_states[:, -1:]
         last_channel = last_channel.repeat(1, hidden_states.size(1) - 2, 1, 1, 1)

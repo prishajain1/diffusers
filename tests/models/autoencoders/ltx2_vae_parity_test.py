@@ -58,18 +58,18 @@ def main():
     # Tiled Passes
     print("\nRunning Tiled Encoder/Decoder Passes...")
     # spatial_compression_ratio = patch_size(4) * 2^(4 downblocks) = 64
-    model.tile_sample_min_height = 128
-    model.tile_sample_min_width = 128
-    model.tile_sample_stride_height = 64
-    model.tile_sample_stride_width = 64
-    model.tile_latent_min_height = 2 
-    model.tile_latent_min_width = 2  
-    model.tile_latent_stride_height = 1
-    model.tile_latent_stride_width = 1
+    model.tile_sample_min_height = 192
+    model.tile_sample_min_width = 192
+    model.tile_sample_stride_height = 128
+    model.tile_sample_stride_width = 128
+    model.tile_latent_min_height = 3
+    model.tile_latent_min_width = 3
+    model.tile_latent_stride_height = 2
+    model.tile_latent_stride_width = 2
     model.enable_tiling()
     
     # Encode test
-    B, C, T, H, W = 1, 3, 9, 128, 128
+    B, C, T, H, W = 1, 3, 9, 256, 256
     torch.manual_seed(42)
     sample_spatial = torch.rand((B, C, T, H, W)) * 2.0 - 1.0
     

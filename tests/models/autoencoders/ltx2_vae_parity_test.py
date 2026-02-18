@@ -85,6 +85,10 @@ def main():
     model.tile_sample_stride_num_frames = 8
     model.use_framewise_decoding = True
     
+    # Disable implicit spatial tiling
+    model.tile_sample_min_height = 10000
+    model.tile_sample_min_width = 10000
+    
     # Extend sample to verify temporal tiling logic
     B, C, T, H, W = 1, 3, 33, 128, 128
     torch.manual_seed(42)

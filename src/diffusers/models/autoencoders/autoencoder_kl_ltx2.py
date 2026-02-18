@@ -195,6 +195,7 @@ class LTX2VideoResnetBlock3d(nn.Module):
         hidden_states = inputs
 
         hidden_states = self.norm1(hidden_states)
+        print(f"[Diffusers Resnet] After norm1: mean={hidden_states.mean().item():.6f}, std={hidden_states.std().item():.6f}")
 
         if self.scale_shift_table is not None:
             temb = temb.unflatten(1, (4, -1)) + self.scale_shift_table[None, ..., None, None, None]
@@ -203,6 +204,7 @@ class LTX2VideoResnetBlock3d(nn.Module):
 
         hidden_states = self.nonlinearity(hidden_states)
         hidden_states = self.conv1(hidden_states, causal=causal)
+        print(f"[Diffusers Resnet] After conv1: mean={hidden_states.mean().item():.6f}, std={hidden_states.std().item():.6f}")
 
         if self.per_channel_scale1 is not None:
             spatial_shape = hidden_states.shape[-2:]
@@ -212,6 +214,7 @@ class LTX2VideoResnetBlock3d(nn.Module):
             hidden_states = hidden_states + (spatial_noise * self.per_channel_scale1)[None, :, None, ...]
 
         hidden_states = self.norm2(hidden_states)
+        print(f"[Diffusers Resnet] After norm2: mean={hidden_states.mean().item():.6f}, std={hidden_states.std().item():.6f}")
 
         if self.scale_shift_table is not None:
             hidden_states = hidden_states * (1 + scale_2) + shift_2
@@ -219,6 +222,7 @@ class LTX2VideoResnetBlock3d(nn.Module):
         hidden_states = self.nonlinearity(hidden_states)
         hidden_states = self.dropout(hidden_states)
         hidden_states = self.conv2(hidden_states, causal=causal)
+        print(f"[Diffusers Resnet] After conv2: mean={hidden_states.mean().item():.6f}, std={hidden_states.std().item():.6f}")
 
         if self.per_channel_scale2 is not None:
             spatial_shape = hidden_states.shape[-2:]
@@ -234,6 +238,7 @@ class LTX2VideoResnetBlock3d(nn.Module):
             inputs = self.conv_shortcut(inputs)
 
         hidden_states = hidden_states + inputs
+        print(f"[Diffusers Resnet] After final add: mean={hidden_states.mean().item():.6f}, std={hidden_states.std().item():.6f}")
         return hidden_states
 
 

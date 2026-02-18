@@ -171,8 +171,12 @@ class LTX2VaeTest(unittest.TestCase):
         # Spatial compression = patch_size(2) * 2**2 = 8
         vae.tile_sample_min_height = 16
         vae.tile_sample_min_width = 16
+        vae.tile_sample_stride_height = 12
+        vae.tile_sample_stride_width = 12
         vae.tile_latent_min_height = 2  # 16 / 8 spatial downsample
         vae.tile_latent_min_width = 2   # 16 / 8 spatial downsample
+        vae.tile_latent_stride_height = 1 # 12 / 8 mathematically drops
+        vae.tile_latent_stride_width = 1
         vae.enable_tiling()
         
         # Test encode with tiling
@@ -211,11 +215,8 @@ class LTX2VaeTest(unittest.TestCase):
         # Temporal compression natively = 1 * 2**2 = 4
         # Temporal boundaries natively
         # The total temporal stride down is `4` (2 * 2**1 blocks) based on `decoder_spatio_temporal_scaling`.
-        # Meaning the padding requires minimum blocks strictly divisible into chunks mathematically scaling without offset residues padding errors.
-        vae.tile_sample_min_num_frames = 17 # Must be (multiples of 4) + 1 to avoid unflatten remainder errors e.g 4*4 + 1
+        vae.tile_sample_min_num_frames = 16 # Chunk is 16+1 = 17 frames natively perfectly divisible by temporal unflatten limits
         vae.tile_sample_stride_num_frames = 8
-        vae.tile_latent_min_num_frames = 5 # 17 // 4 + 1
-        vae.tile_latent_stride_num_frames = 2 # 8 // 4
         vae.use_framewise_decoding = True  
         
         # Test 2 chunks: length = stride * chunks + overlap

@@ -62,7 +62,7 @@ class LTX2VaeTest(unittest.TestCase):
         out_channels = 32
         
         # When in_channels != out_channels, `conv_in` maps 64 -> 32
-        # Then `LTXVideoUpsampler3d` receives 32 * upscale_factor = 256
+        # Then `LTXVideoUpsampler3d` receives out_channels * upscale_factor = 32 * 2 = 64
         upsampler = LTX2VideoUpBlock3d(
             in_channels=in_channels,
             out_channels=out_channels,
@@ -70,7 +70,7 @@ class LTX2VaeTest(unittest.TestCase):
             resnet_eps=1e-6,
             spatio_temporal_scale=True,
             upsample_residual=False,
-            upscale_factor=8
+            upscale_factor=2
         )
         
         # (B, C, T, H, W) -> T should remain 3, HW should double from 8 to 16

@@ -162,7 +162,10 @@ class LTX2VaeTest(unittest.TestCase):
             patch_size=2,
             patch_size_t=1,
             spatio_temporal_scaling=(True, True),
-            decoder_spatio_temporal_scaling=(True, True)
+            decoder_spatio_temporal_scaling=(True, True),
+            downsample_type=("spatial", "spatial"),
+            upsample_factor=(2, 2),
+            upsample_residual=(True, True)
         )
         # Tiling boundaries natively
         # Spatial compression = patch_size(2) * 2**2 = 8
@@ -179,7 +182,8 @@ class LTX2VaeTest(unittest.TestCase):
         encoded_dist = vae.encode(dummy_video).latent_dist
         latents = encoded_dist.sample()
         
-        # Spatial 32 / 8 = 4. 
+        # Spatial downsample factor is 2 * 2**2 = 8.
+        # So 32 -> 4
         self.assertEqual(latents.shape[-2:], (4, 4))
         
         # Test decode with tiling
@@ -199,7 +203,10 @@ class LTX2VaeTest(unittest.TestCase):
             patch_size=2,
             patch_size_t=1,
             spatio_temporal_scaling=(True, True),
-            decoder_spatio_temporal_scaling=(True, True)
+            decoder_spatio_temporal_scaling=(True, True),
+            downsample_type=("temporal", "temporal"),
+            upsample_factor=(2, 2),
+            upsample_residual=(True, True)
         )
         # Temporal compression natively = 1 * 2**2 = 4
         # Temporal boundaries natively

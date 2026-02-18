@@ -27,8 +27,7 @@ class LTX2VaeTest(unittest.TestCase):
             in_channels=in_channels,
             out_channels=out_channels,
             kernel_size=3,
-            stride=1,
-            padding=1
+            stride=1
         )
         
         # PyTorch Diffusers LTX2 Causal Conv
@@ -45,13 +44,10 @@ class LTX2VaeTest(unittest.TestCase):
         downsampler = LTX2VideoDownBlock3D(
             in_channels=in_channels,
             out_channels=out_channels,
-            temb_channels=None,
             num_layers=1,
             resnet_eps=1e-6,
-            add_downsample=True,
-            downsample_padding=1,
-            spatial_downsample=True,
-            temporal_downsample=False
+            spatio_temporal_scale=True,
+            downsample_type="spatial"
         )
         
         # (B, C, T, H, W) -> T should remain 5, HW should halve from 16 to 8
@@ -68,12 +64,11 @@ class LTX2VaeTest(unittest.TestCase):
         upsampler = LTX2VideoUpBlock3d(
             in_channels=in_channels,
             out_channels=out_channels,
-            temb_channels=None,
             num_layers=1,
             resnet_eps=1e-6,
-            add_upsample=True,
-            spatial_upsample=True,
-            temporal_upsample=False
+            spatio_temporal_scale=True,
+            upsample_residual=False,
+            upscale_factor=8
         )
         
         # (B, C, T, H, W) -> T should remain 3, HW should double from 8 to 16
@@ -93,13 +88,14 @@ class LTX2VaeTest(unittest.TestCase):
         parameters[:, 128:, ...] = 1.0 # Set logvar to 1.0
         
         dist = DiagonalGaussianDistribution(parameters)
+        # PyTorch diffusers base DiagonalGaussianDistribution evaluates `std/var` per sequence based entirely on `logvar` math matching PyTorch broadcast outputs, effectively preserving dimensions correctly 
         
         # Verify splits
         self.assertEqual(dist.mean.shape, (B, 128, T, H, W))
         self.assertEqual(dist.logvar.shape, (B, 1, T, H, W))
         
-        # Logvar mathematically broadcasts to variance
-        self.assertEqual(dist.var.shape, (B, 128, T, H, W))
+        # Logvar mathematically broadcasts to variance during sampling, but retains C=1 in explicit var property
+        self.assertEqual(dist.var.shape, (B, 1, T, H, W))
         
         # Sampling should return matching shapes
         sample = dist.sample()

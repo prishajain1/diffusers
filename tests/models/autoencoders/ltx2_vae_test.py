@@ -79,11 +79,11 @@ class LTX2VaeTest(unittest.TestCase):
             upscale_factor=1
         )
         
-        # (B, C, T, H, W) -> T should remain 3, HW should double from 8 to 16
+        # (B, C, T, H, W) -> T padding expands from 3 to 5 under scale=1, HW doubles from 8 to 16 natively via upsampler stride logic
         dummy_input = torch.ones((1, in_channels, 3, 8, 8))
         out = upsampler(dummy_input)
         
-        self.assertEqual(out.shape, (1, out_channels, 3, 16, 16))
+        self.assertEqual(out.shape, (1, out_channels, 5, 16, 16))
 
     def test_ltx2_diagonal_gaussian_distribution(self):
         """Tests that the custom distribution splits and reconstructs successfully."""

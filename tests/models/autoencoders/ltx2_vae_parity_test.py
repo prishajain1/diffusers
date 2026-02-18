@@ -81,8 +81,9 @@ def main():
     
     # Temporal Tiled Passes
     print("\nRunning Temporal Tiled Encoder/Decoder Passes...")
-    model.tile_sample_min_num_frames = 17 # Must be divisible by upscale mathematically
-    model.tile_sample_stride_num_frames = 8
+    # temporal_compression_ratio = patch_size_t(1) * 2^(4 downblocks) = 16
+    model.tile_sample_min_num_frames = 33 
+    model.tile_sample_stride_num_frames = 16
     model.use_framewise_decoding = True
     
     # Disable implicit spatial tiling
@@ -90,7 +91,7 @@ def main():
     model.tile_sample_min_width = 10000
     
     # Extend sample to verify temporal tiling logic
-    B, C, T, H, W = 1, 3, 33, 128, 128
+    B, C, T, H, W = 1, 3, 49, 128, 128
     torch.manual_seed(42)
     sample_temporal = torch.rand((B, C, T, H, W)) * 2.0 - 1.0
     

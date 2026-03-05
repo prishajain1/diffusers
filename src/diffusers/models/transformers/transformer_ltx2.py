@@ -42,10 +42,7 @@ from ..normalization import RMSNorm
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
 def print_shape(name: str, tensor: Optional[torch.Tensor]):
-    if tensor is not None:
-        print(f"DIFFUSERS - Shape of {name}: {tensor.shape}")
-    else:
-        print(f"DIFFUSERS - Shape of {name}: None")
+    pass
 
 def apply_interleaved_rotary_emb(x: torch.Tensor, freqs: Tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
     cos, sin = freqs

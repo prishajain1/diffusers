@@ -1,15 +1,15 @@
 import torch
-from diffusers import LTXVideoPipeline
+from diffusers.pipelines.ltx2.pipeline_ltx2 import LTX2Pipeline
 from diffusers.utils import export_to_video
 import os
 
 def generate_video():
     # Load the pipeline
     # The reference LTX-2 model from Lightricks
-    model_id = "Lightricks/LTX-Video"
+    model_id = "Lightricks/LTX-2"
     
-    print(f"Loading LTXVideoPipeline from {model_id}...")
-    pipeline = LTXVideoPipeline.from_pretrained(model_id, torch_dtype=torch.bfloat16)
+    print(f"Loading LTX2Pipeline from {model_id}...")
+    pipeline = LTX2Pipeline.from_pretrained(model_id, torch_dtype=torch.bfloat16)
     
     # Move to GPU if available, else CPU (or MPS for Mac)
     if torch.cuda.is_available():

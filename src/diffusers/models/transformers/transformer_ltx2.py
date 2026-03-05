@@ -1399,7 +1399,6 @@ class LTX2VideoTransformer3DModel(
 
         # 5. Run transformer blocks
         for i, block in enumerate(self.transformer_blocks):
-            print(f"--- Diffusers Block {i} ---")
             if torch.is_grad_enabled() and self.gradient_checkpointing:
                 hidden_states, audio_hidden_states = self._gradient_checkpointing_func(
                     block,

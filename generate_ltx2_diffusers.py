@@ -41,7 +41,7 @@ def _resample_audio(container, audio_stream, frame_in) -> None:
 
 def _write_audio(container, audio_stream, samples: torch.Tensor, audio_sample_rate: int) -> None:
     if hasattr(samples, "cpu"):
-        samples = samples.contiguous().cpu().numpy()
+        samples = samples.to(torch.float32).contiguous().cpu().numpy()
         
     if samples.ndim == 1:
         samples = samples[:, None]

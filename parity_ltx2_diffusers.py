@@ -1,8 +1,17 @@
+import os
+import sys
+# Prioritize local src directory
+sys.path.insert(0, os.path.abspath("src"))
+
 import torch
 import numpy as np
+
+# Import diffusers directly, it will use the one from src/
+import diffusers
 import diffusers.utils.torch_utils
-from src.diffusers.pipelines.ltx2.pipeline_ltx2 import LTX2Pipeline
-from src.diffusers.pipelines.ltx2.pipeline_ltx2 import randn_tensor as orig_randn_tensor
+import diffusers.pipelines.ltx2.pipeline_ltx2
+from diffusers.pipelines.ltx2.pipeline_ltx2 import LTX2Pipeline
+from diffusers.pipelines.ltx2.pipeline_ltx2 import randn_tensor as orig_randn_tensor
 
 # Hook randn_tensor to save latents
 randn_tensors_saved = []
@@ -90,12 +99,22 @@ def main():
         return_dict=False
     )
     
-    video_noise = [t for t in randn_tensors_saved if len(t.shape) == 5][0]
-    audio_noise = [t for t in randn_tensors_saved if len(t.shape) == 4][0]
+    video_noise_tensors = [t for t in randn_tensors_saved if len(t.shape) == 5]
+    audio_noise_tensors = [t for t in randn_tensors_saved if len(t.shape) == 4]
     
-    np.save("../maxdiffusion/video_noise.npy", video_noise)
-    np.save("../maxdiffusion/audio_noise.npy", audio_noise)
-    print("Saved video_noise.npy and audio_noise.npy to maxdiffusion folder.")
+    if not video_noise_tensors:
+         print("Warning: no 5D video noise tensor was saved!")
+    else:
+         video_noise = video_noise_tensors[0]
+         np.save("../maxdiffusion/video_noise.npy", video_noise)
+         print(f"Saved video_noise.npy with shape {video_noise.shape} to maxdiffusion folder.")
+
+    if not audio_noise_tensors:
+         print("Warning: no 4D audio noise tensor was saved!")
+    else:
+         audio_noise = audio_noise_tensors[0]
+         np.save("../maxdiffusion/audio_noise.npy", audio_noise)
+         print(f"Saved audio_noise.npy with shape {audio_noise.shape} to maxdiffusion folder.")
 
 if __name__ == '__main__':
     main()

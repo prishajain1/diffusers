@@ -60,13 +60,6 @@ def hook_connectors(module, input, output):
 
 from diffusers.pipelines.ltx2 import pipeline_ltx2
 
-orig_retrieve_timesteps = pipeline_ltx2.retrieve_timesteps
-def patched_retrieve_timesteps(scheduler, *args, **kwargs):
-    if "mu" in kwargs:
-        print_stat("calculate_shift_mu", kwargs["mu"])
-    return orig_retrieve_timesteps(scheduler, *args, **kwargs)
-pipeline_ltx2.retrieve_timesteps = patched_retrieve_timesteps
-
 def hook_transformer_pre(module, args, kwargs):
     hidden_states = kwargs.get("hidden_states")
     if hidden_states is None and len(args) > 0:
@@ -113,6 +106,18 @@ def set_hooks(pipe):
     if hasattr(pipe, 'connectors'):
         pipe.connectors.text_proj_in.register_forward_hook(hook_proj)
         pipe.connectors.register_forward_hook(hook_connectors)
+    
+    orig_set_timesteps = type(pipe.scheduler).set_timesteps
+    def patched_set_timesteps(self, *args, **kwargs):
+        if "mu" in kwargs:
+            print(f"\n+++ DIFFUSERS MU: {kwargs['mu']} +++\n")
+        out = orig_set_timesteps(self, *args, **kwargs)
+        if hasattr(self, "timesteps"):
+            print("DIFFUSERS TIMESTEPS:", self.timesteps[:5].tolist())
+            print("DIFFUSERS SIGMAS:", self.sigmas[:5].tolist())
+        return out
+    type(pipe.scheduler).set_timesteps = patched_set_timesteps
+
     pipe.transformer.register_forward_pre_hook(hook_transformer_pre, with_kwargs=True)
     pipe.transformer.register_forward_hook(hook_transformer)
     pipe.vae.decoder.register_forward_hook(get_hook('vae_decoder'))

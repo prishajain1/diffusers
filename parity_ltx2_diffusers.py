@@ -39,7 +39,10 @@ def get_hook(name):
         elif hasattr(output, "sample"):
             print_stat(name, output.sample)
         elif hasattr(output, "hidden_states") and output.hidden_states is not None:
-             print_stat(name, output.hidden_states[-1])
+             t = output.hidden_states[-1].cpu().float().numpy()
+             print_stat(name, t)
+             if name == "text_encoder":
+                 np.save("diffusers_text_encoder.npy", t)
         elif hasattr(output, "last_hidden_state"):
             print_stat(name, output.last_hidden_state)
         elif type(output).__name__ == "LTX2PipelineOutput":

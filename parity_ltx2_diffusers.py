@@ -85,46 +85,52 @@ def hook_transformer(module, input, output):
     print_stat("transformer_video", out[0])
     print_stat("transformer_audio", out[1])
 
-def hook_proj(module, input, output):
-    print_stat("text_proj_out", output)
-
 def set_hooks(pipe):
-    # Patch Gemma instead of using register_forward_hook to catch kwargs
-    import transformers
-    orig_gemma_call = transformers.Gemma3ForConditionalGeneration.forward
-    def patched_gemma_call(self, *args, **kwargs):
-        if "input_ids" in kwargs:
-             print(f"Diffusers intercepted input_ids sum: {kwargs['input_ids'].sum().item()}")
-        out = orig_gemma_call(self, *args, **kwargs)
-        if hasattr(out, "hidden_states") and out.hidden_states is not None:
-             t = out.hidden_states[-1].cpu().float().numpy()
-             print_stat("text_encoder", t)
-             np.save("diffusers_text_encoder.npy", t)
+    # Patch Transformer forward pass
+    orig_transformer_forward = type(pipe.transformer).forward
+    def patched_transformer_forward(self, hidden_states, encoder_hidden_states, timestep, encoder_attention_mask, *args, **kwargs):
+        print("\n=== TRANSFORMER INPUTS ===")
+        print_stat("transformer_input_video_latents", hidden_states)
+        print_stat("transformer_input_audio_latents", encoder_hidden_states)
+        print_stat("transformer_timestep", timestep)
+        out = orig_transformer_forward(self, hidden_states, encoder_hidden_states, timestep, encoder_attention_mask, *args, **kwargs)
+        print("\n=== TRANSFORMER OUTPUTS ===")
+        
+        if hasattr(out, "sample"):
+            print_stat("transformer_video", out.sample)
+            if hasattr(out, "audio_sample"):
+                print_stat("transformer_audio", out.audio_sample)
+        elif isinstance(out, (tuple, list)):
+            print_stat("transformer_video", out[0])
+            if len(out) > 1:
+                print_stat("transformer_audio", out[1])
+        else:
+             print_stat("transformer_video", out)
         return out
-    transformers.Gemma3ForConditionalGeneration.forward = patched_gemma_call
+    type(pipe.transformer).forward = patched_transformer_forward
 
-    if hasattr(pipe, 'connectors'):
-        pipe.connectors.text_proj_in.register_forward_hook(hook_proj)
-        pipe.connectors.register_forward_hook(hook_connectors)
+    if hasattr(pipe, 'vae'):
+        pipe.vae.decoder.register_forward_hook(get_hook('vae_decoder'))
     
-    orig_set_timesteps = type(pipe.scheduler).set_timesteps
-    def patched_set_timesteps(self, *args, **kwargs):
-        if "mu" in kwargs:
-            print(f"\n+++ DIFFUSERS MU: {kwargs['mu']} +++\n")
-        out = orig_set_timesteps(self, *args, **kwargs)
-        if hasattr(self, "timesteps"):
-            print("DIFFUSERS TIMESTEPS:", self.timesteps[:5].tolist())
-            print("DIFFUSERS SIGMAS:", self.sigmas[:5].tolist())
-        return out
-    type(pipe.scheduler).set_timesteps = patched_set_timesteps
-
-    pipe.transformer.register_forward_pre_hook(hook_transformer_pre, with_kwargs=True)
-    pipe.transformer.register_forward_hook(hook_transformer)
-    pipe.vae.decoder.register_forward_hook(get_hook('vae_decoder'))
     if hasattr(pipe, 'audio_vae'):
         pipe.audio_vae.decoder.register_forward_hook(get_hook('audio_vae_decoder'))
+
     if hasattr(pipe, 'vocoder'):
         pipe.vocoder.register_forward_hook(get_hook('vocoder'))
+
+    # Patch Transformer Block to debug intermediate std dev drift
+    orig_block_forward = LTXVideoTransformerBlock.forward
+    def patched_block_forward(self, hidden_states, encoder_hidden_states, temb, *args, **kwargs):
+         if not hasattr(pipe.transformer, '_first_block_hooked'):
+             print_stat(f"block_0_hidden_states_in", hidden_states)
+             print_stat(f"block_0_encoder_hidden_states_in", encoder_hidden_states)
+             print_stat(f"block_0_temb_in", temb)
+         out = orig_block_forward(self, hidden_states, encoder_hidden_states, temb, *args, **kwargs)
+         if not hasattr(pipe.transformer, '_first_block_hooked'):
+             print_stat(f"block_0_hidden_states_out", out)
+             pipe.transformer._first_block_hooked = True
+         return out
+    LTXVideoTransformerBlock.forward = patched_block_forward
 
 def main():
     pipe = LTX2Pipeline.from_pretrained("Lightricks/LTX-2", torch_dtype=torch.bfloat16)

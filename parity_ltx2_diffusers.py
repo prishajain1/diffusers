@@ -119,7 +119,7 @@ def set_hooks(pipe):
         pipe.vocoder.register_forward_hook(get_hook('vocoder'))
 
     # Patch Transformer Block to debug intermediate std dev drift
-    orig_block_forward = LTXVideoTransformerBlock.forward
+    orig_block_forward = LTX2VideoTransformerBlock.forward
     def patched_block_forward(self, hidden_states, encoder_hidden_states, temb, *args, **kwargs):
          if not hasattr(pipe.transformer, '_first_block_hooked'):
              print_stat(f"block_0_hidden_states_in", hidden_states)

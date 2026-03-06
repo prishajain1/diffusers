@@ -59,6 +59,9 @@ def hook_connectors(module, input, output):
     print_stat("connectors_audio", output[1])
 
 def hook_transformer(module, input, output):
+    print_stat("transformer_input_video_latents", input[0])
+    if len(input) > 1 and input[1] is not None:
+        print_stat("transformer_input_audio_latents", input[1])
     out = output if isinstance(output, tuple) else (output[0], output[1])
     print_stat("transformer_video", out[0])
     print_stat("transformer_audio", out[1])

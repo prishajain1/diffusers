@@ -59,12 +59,13 @@ def hook_connectors(module, input, output):
     print_stat("connectors_audio", output[1])
 
 from diffusers.pipelines.ltx2 import pipeline_ltx2
-orig_calculate_shift = pipeline_ltx2.calculate_shift
-def patched_calculate_shift(*args, **kwargs):
-    out = orig_calculate_shift(*args, **kwargs)
-    print_stat("calculate_shift_mu", out)
-    return out
-pipeline_ltx2.calculate_shift = patched_calculate_shift
+
+orig_retrieve_timesteps = pipeline_ltx2.retrieve_timesteps
+def patched_retrieve_timesteps(scheduler, *args, **kwargs):
+    if "mu" in kwargs:
+        print_stat("calculate_shift_mu", kwargs["mu"])
+    return orig_retrieve_timesteps(scheduler, *args, **kwargs)
+pipeline_ltx2.retrieve_timesteps = patched_retrieve_timesteps
 
 def hook_transformer_pre(module, args, kwargs):
     hidden_states = kwargs.get("hidden_states")

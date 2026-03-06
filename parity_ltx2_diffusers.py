@@ -88,12 +88,15 @@ def hook_transformer(module, input, output):
 def set_hooks(pipe):
     # Patch Transformer forward pass
     orig_transformer_forward = type(pipe.transformer).forward
-    def patched_transformer_forward(self, hidden_states, encoder_hidden_states, timestep, encoder_attention_mask, *args, **kwargs):
+    def patched_transformer_forward(self, *args, **kwargs):
         print("\n=== TRANSFORMER INPUTS ===")
-        print_stat("transformer_input_video_latents", hidden_states)
-        print_stat("transformer_input_audio_latents", encoder_hidden_states)
-        print_stat("transformer_timestep", timestep)
-        out = orig_transformer_forward(self, hidden_states, encoder_hidden_states, timestep, encoder_attention_mask, *args, **kwargs)
+        if "hidden_states" in kwargs:
+             print_stat("transformer_input_video_latents", kwargs["hidden_states"])
+        if "audio_hidden_states" in kwargs:
+             print_stat("transformer_input_audio_latents", kwargs["audio_hidden_states"])
+        if "timestep" in kwargs:
+             print_stat("transformer_timestep", kwargs["timestep"])
+        out = orig_transformer_forward(self, *args, **kwargs)
         print("\n=== TRANSFORMER OUTPUTS ===")
         
         if hasattr(out, "sample"):
@@ -122,14 +125,31 @@ def set_hooks(pipe):
 
     # Patch Transformer Block to debug intermediate std dev drift
     orig_block_forward = LTX2VideoTransformerBlock.forward
-    def patched_block_forward(self, hidden_states, encoder_hidden_states, temb, *args, **kwargs):
+    def patched_block_forward(self, *args, **kwargs):
          if not hasattr(pipe.transformer, '_first_block_hooked'):
-             print_stat(f"block_0_hidden_states_in", hidden_states)
-             print_stat(f"block_0_encoder_hidden_states_in", encoder_hidden_states)
-             print_stat(f"block_0_temb_in", temb)
-         out = orig_block_forward(self, hidden_states, encoder_hidden_states, temb, *args, **kwargs)
+             if len(args) > 0:
+                 print_stat(f"block_0_hidden_states_in", args[0])
+             if len(args) > 1:
+                 print_stat(f"block_0_audio_hidden_states_in", args[1])
+             if len(args) > 2:
+                 print_stat(f"block_0_encoder_hidden_states_in", args[2])
+             if len(args) > 4:
+                 print_stat(f"block_0_temb_in", args[4])
+             # Check kwargs too just in case
+             if "hidden_states" in kwargs:
+                 print_stat(f"block_0_hidden_states_in", kwargs["hidden_states"])
+             if "encoder_hidden_states" in kwargs:
+                 print_stat(f"block_0_encoder_hidden_states_in", kwargs["encoder_hidden_states"])
+             if "temb" in kwargs:
+                 print_stat(f"block_0_temb_in", kwargs["temb"])
+         
+         out = orig_block_forward(self, *args, **kwargs)
+         
          if not hasattr(pipe.transformer, '_first_block_hooked'):
-             print_stat(f"block_0_hidden_states_out", out)
+             if isinstance(out, tuple):
+                 print_stat(f"block_0_hidden_states_out", out[0])
+             else:
+                 print_stat(f"block_0_hidden_states_out", out)
              pipe.transformer._first_block_hooked = True
          return out
     LTX2VideoTransformerBlock.forward = patched_block_forward

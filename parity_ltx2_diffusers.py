@@ -132,7 +132,7 @@ def set_hooks(pipe):
              print_stat(f"block_0_hidden_states_out", out)
              pipe.transformer._first_block_hooked = True
          return out
-    LTXVideoTransformerBlock.forward = patched_block_forward
+    LTX2VideoTransformerBlock.forward = patched_block_forward
 
 def main():
     pipe = LTX2Pipeline.from_pretrained("Lightricks/LTX-2", torch_dtype=torch.bfloat16)

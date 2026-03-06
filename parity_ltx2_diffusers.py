@@ -54,6 +54,7 @@ def get_hook(name):
     return hook
 
 def hook_connectors(module, input, output):
+    print_stat("connectors_input", input[0])
     print_stat("connectors_video", output[0])
     print_stat("connectors_audio", output[1])
 

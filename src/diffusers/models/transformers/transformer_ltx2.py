@@ -41,8 +41,15 @@ from ..normalization import RMSNorm
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
+printed_count = 0
 def print_shape(name: str, tensor: Optional[torch.Tensor]):
-    pass
+    global printed_count
+    if printed_count > 1000:
+        return
+    if tensor is not None:
+        tensor = tensor.float()
+        print(f"[{name}] min: {tensor.min().item():.5f}, max: {tensor.max().item():.5f}, mean: {tensor.mean().item():.5f}, std: {tensor.std().item():.5f}")
+        printed_count += 1
 
 def apply_interleaved_rotary_emb(x: torch.Tensor, freqs: Tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
     cos, sin = freqs

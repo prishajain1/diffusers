@@ -63,6 +63,9 @@ def hook_transformer(module, input, output):
     print_stat("transformer_video", out[0])
     print_stat("transformer_audio", out[1])
 
+def hook_proj(module, input, output):
+    print_stat("text_proj_out", output)
+
 def set_hooks(pipe):
     # Patch Gemma instead of using register_forward_hook to catch kwargs
     import transformers
@@ -79,6 +82,7 @@ def set_hooks(pipe):
     transformers.Gemma3ForConditionalGeneration.forward = patched_gemma_call
 
     if hasattr(pipe, 'connectors'):
+        pipe.connectors.text_proj_in.register_forward_hook(hook_proj)
         pipe.connectors.register_forward_hook(hook_connectors)
     pipe.transformer.register_forward_hook(hook_transformer)
     pipe.vae.decoder.register_forward_hook(get_hook('vae_decoder'))

@@ -58,10 +58,27 @@ def hook_connectors(module, input, output):
     print_stat("connectors_video", output[0])
     print_stat("connectors_audio", output[1])
 
+def hook_transformer_pre(module, args, kwargs):
+    hidden_states = kwargs.get("hidden_states")
+    if hidden_states is None and len(args) > 0:
+        hidden_states = args[0]
+        
+    audio_hidden_states = kwargs.get("audio_hidden_states")
+    if audio_hidden_states is None and len(args) > 1:
+        audio_hidden_states = args[1]
+        
+    timestep = kwargs.get("timestep")
+    if timestep is None and len(args) > 4:
+        timestep = args[4]
+        
+    if hidden_states is not None:
+        print_stat("transformer_input_video_latents", hidden_states)
+    if audio_hidden_states is not None:
+        print_stat("transformer_input_audio_latents", audio_hidden_states)
+    if timestep is not None:
+        print_stat("transformer_timestep", timestep)
+
 def hook_transformer(module, input, output):
-    print_stat("transformer_input_video_latents", input[0])
-    if len(input) > 1 and input[1] is not None:
-        print_stat("transformer_input_audio_latents", input[1])
     out = output if isinstance(output, tuple) else (output[0], output[1])
     print_stat("transformer_video", out[0])
     print_stat("transformer_audio", out[1])
@@ -87,6 +104,7 @@ def set_hooks(pipe):
     if hasattr(pipe, 'connectors'):
         pipe.connectors.text_proj_in.register_forward_hook(hook_proj)
         pipe.connectors.register_forward_hook(hook_connectors)
+    pipe.transformer.register_forward_pre_hook(hook_transformer_pre, with_kwargs=True)
     pipe.transformer.register_forward_hook(hook_transformer)
     pipe.vae.decoder.register_forward_hook(get_hook('vae_decoder'))
     if hasattr(pipe, 'audio_vae'):

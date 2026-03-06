@@ -1,8 +1,8 @@
 import torch
 import numpy as np
 import diffusers.utils.torch_utils
-from diffusers.pipelines.ltx2.pipeline_ltx2 import LTX2Pipeline
-from diffusers.pipelines.ltx2.pipeline_ltx2 import randn_tensor as orig_randn_tensor
+from src.diffusers.pipelines.ltx2.pipeline_ltx2 import LTX2Pipeline
+from src.diffusers.pipelines.ltx2.pipeline_ltx2 import randn_tensor as orig_randn_tensor
 
 # Hook randn_tensor to save latents
 randn_tensors_saved = []

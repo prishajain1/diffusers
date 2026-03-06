@@ -63,7 +63,20 @@ def hook_transformer(module, input, output):
     print_stat("transformer_audio", out[1])
 
 def set_hooks(pipe):
-    pipe.text_encoder.register_forward_hook(get_hook('text_encoder'))
+    # Patch Gemma instead of using register_forward_hook to catch kwargs
+    import transformers
+    orig_gemma_call = transformers.Gemma3ForConditionalGeneration.forward
+    def patched_gemma_call(self, *args, **kwargs):
+        if "input_ids" in kwargs:
+             print(f"Diffusers intercepted input_ids sum: {kwargs['input_ids'].sum().item()}")
+        out = orig_gemma_call(self, *args, **kwargs)
+        if hasattr(out, "hidden_states") and out.hidden_states is not None:
+             t = out.hidden_states[-1].cpu().float().numpy()
+             print_stat("text_encoder", t)
+             np.save("diffusers_text_encoder.npy", t)
+        return out
+    transformers.Gemma3ForConditionalGeneration.forward = patched_gemma_call
+
     if hasattr(pipe, 'connectors'):
         pipe.connectors.register_forward_hook(hook_connectors)
     pipe.transformer.register_forward_hook(hook_transformer)

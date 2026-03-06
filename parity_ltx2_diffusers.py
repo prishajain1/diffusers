@@ -28,7 +28,7 @@ diffusers.pipelines.ltx2.pipeline_ltx2.randn_tensor = custom_randn_tensor
 def print_stat(name, tensor):
     if hasattr(tensor, "shape"): 
         t = tensor.float()
-        print(f"[{name}] min: {t.min().item():.5f}, max: {t.max().item():.5f}, mean: {t.mean().item():.5f}, std: {t.std().item():.5f}")
+        print(f"[{name}] shape: {tuple(t.shape)}, min: {t.min().item():.5f}, max: {t.max().item():.5f}, mean: {t.mean().item():.5f}, std: {t.std().item():.5f}")
 
 def get_hook(name):
     def hook(module, input, output):

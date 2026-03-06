@@ -85,6 +85,28 @@ def main():
     frame_rate = 24.0
 
     print("Running pipeline...")
+    print("\n--- DEBUG TOKENIZER DIFFUSERS ---")
+    prompt = "A man in a brightly lit room talks on a vintage telephone. In a low, heavy voice, he says, 'I understand. I won't call again. Goodbye.' He hangs up the receiver and looks down with a sad expression. He holds the black rotary phone to his right ear with his right hand, his left hand holding a rocks glass with amber liquid. He wears a brown suit jacket over a white shirt, and a gold ring on his left ring finger. His short hair is neatly combed, and he has light skin with visible wrinkles around his eyes. The camera remains stationary, focused on his face and upper body. The room is brightly lit by a warm light source off-screen to the left, casting shadows on the wall behind him. The scene appears to be from a dramatic movie."
+    negative_prompt = "shaky, glitchy, low quality, worst quality, deformed, distorted, disfigured, motion smear, motion artifacts, fused fingers, bad anatomy, weird hand, ugly, transition, static."
+    
+    # Just grab tokenizer directly from pipe
+    # Gemma expects left padding for chat-style prompts
+    pipe.tokenizer.padding_side = "left"
+    if pipe.tokenizer.pad_token is None:
+        pipe.tokenizer.pad_token = pipe.tokenizer.eos_token
+        
+    for p_name, p_text in [("prompt", prompt), ("negative_prompt", negative_prompt)]:
+        text_inputs = pipe.tokenizer(
+            [p_text],
+            padding="max_length",
+            max_length=1024,
+            truncation=True,
+            add_special_tokens=True,
+            return_tensors="pt",
+        )
+        print(f"{p_name} input_ids sum: {text_inputs.input_ids.sum().item()}, non-padded (attn_mask sum): {text_inputs.attention_mask.sum().item()}")
+    print("---------------------------------\n")
+
     out = pipe(
         prompt=prompt,
         negative_prompt=negative_prompt,

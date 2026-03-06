@@ -121,44 +121,10 @@ def set_hooks(pipe):
     if hasattr(pipe, 'vocoder'):
         pipe.vocoder.register_forward_hook(get_hook('vocoder'))
 
-    from diffusers.models.transformers.transformer_ltx2 import LTX2VideoTransformerBlock
-
-    # Patch Transformer Block to debug intermediate std dev drift
-    orig_block_forward = LTX2VideoTransformerBlock.forward
-    def patched_block_forward(self, *args, **kwargs):
-         if not hasattr(pipe.transformer, '_first_block_hooked'):
-             if len(args) > 0:
-                 print_stat(f"block_0_hidden_states_in", args[0])
-             if len(args) > 1:
-                 print_stat(f"block_0_audio_hidden_states_in", args[1])
-             if len(args) > 2:
-                 print_stat(f"block_0_encoder_hidden_states_in", args[2])
-             if len(args) > 4:
-                 print_stat(f"block_0_temb_in", args[4])
-             # Check kwargs too just in case
-             if "hidden_states" in kwargs:
-                 print_stat(f"block_0_hidden_states_in", kwargs["hidden_states"])
-             if "encoder_hidden_states" in kwargs:
-                 print_stat(f"block_0_encoder_hidden_states_in", kwargs["encoder_hidden_states"])
-             if "temb" in kwargs:
-                 print_stat(f"block_0_temb_in", kwargs["temb"])
-         
-         out = orig_block_forward(self, *args, **kwargs)
-         
-         if not hasattr(pipe.transformer, '_first_block_hooked'):
-             if isinstance(out, tuple):
-                 print_stat(f"block_0_hidden_states_out", out[0])
-             else:
-                 print_stat(f"block_0_hidden_states_out", out)
-             pipe.transformer._first_block_hooked = True
-         return out
-    LTX2VideoTransformerBlock.forward = patched_block_forward
-
 def main():
     pipe = LTX2Pipeline.from_pretrained("Lightricks/LTX-2", torch_dtype=torch.bfloat16)
     pipe.to("cuda" if torch.cuda.is_available() else "cpu")
     
-    set_hooks(pipe)
     print("DIFFUSERS SCHEDULER CONFIG:", pipe.scheduler.config)
     prompt = "A man in a brightly lit room talks on a vintage telephone. In a low, heavy voice, he says, 'I understand. I won't call again. Goodbye.' He hangs up the receiver and looks down with a sad expression. He holds the black rotary phone to his right ear with his right hand, his left hand holding a rocks glass with amber liquid. He wears a brown suit jacket over a white shirt, and a gold ring on his left ring finger. His short hair is neatly combed, and he has light skin with visible wrinkles around his eyes. The camera remains stationary, focused on his face and upper body. The room is brightly lit by a warm light source off-screen to the left, casting shadows on the wall behind him. The scene appears to be from a dramatic movie."
     negative_prompt = "shaky, glitchy, low quality, worst quality, deformed, distorted, disfigured, motion smear, motion artifacts, fused fingers, bad anatomy, weird hand, ugly, transition, static."

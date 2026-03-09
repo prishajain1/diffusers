@@ -77,7 +77,7 @@ def main():
     pipe = LTX2Pipeline.from_pretrained("Lightricks/LTX-2", torch_dtype=torch.bfloat16)
     pipe.to("cuda" if torch.cuda.is_available() else "cpu")
     
-    orig_block_forward = type(pipe.connectors.video_connector.transformer_blocks[0]).forward
+    orig_block_forward = connectors.LTX2TransformerBlock1d.forward
     def patched_block_forward(self, hidden_states, *args, **kwargs):
         print(f"\n[DIFFUSERS W] to_q std: {self.attn1.to_q.weight.std().item():.5f}, to_q bias: {self.attn1.to_q.bias.std().item():.5f}")
         print(f"[DIFFUSERS W] to_k std: {self.attn1.to_k.weight.std().item():.5f}, to_k bias: {self.attn1.to_k.bias.std().item():.5f}")
@@ -90,7 +90,7 @@ def main():
         
         return orig_block_forward(self, hidden_states, *args, **kwargs)
     
-    type(pipe.connectors.video_connector.transformer_blocks[0]).forward = patched_block_forward
+    connectors.LTX2TransformerBlock1d.forward = patched_block_forward
     
     # Patch Transformer forward pass to intercept inputs and EXIT EARLY
     orig_transformer_forward = type(pipe.transformer).forward

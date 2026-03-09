@@ -33,14 +33,10 @@ def print_stat(name, tensor):
         t_np = np.array(tensor, dtype=np.float32)
         print(f"[{name}] shape: {t_np.shape}, min: {t_np.min():.5f}, max: {t_np.max():.5f}, mean: {t_np.mean():.5f}, std: {t_np.std():.5f}")
 
-def hook_connectors(module, input, output):
-    print("\n=== CONNECTORS OUTPUTS ===")
-    if isinstance(output, (tuple, list)):
-        print_stat("connectors_video", output[0])
-        if len(output) > 1:
-            print_stat("connectors_audio", output[1])
-    else:
-        print_stat("connectors_out", output)
+def hook_text_proj(module, input, output):
+    print("\n=== FEATURE EXTRACTOR / TEXT PROJ OUTPUTS ===")
+    print_stat("packed_text_embeds", input[0])
+    print_stat("text_proj_out", output)
 
 def main():
     pipe = LTX2Pipeline.from_pretrained("Lightricks/LTX-2", torch_dtype=torch.bfloat16)
@@ -81,7 +77,7 @@ def main():
     
     type(pipe.transformer).forward = patched_transformer_forward
     if hasattr(pipe, 'connectors'):
-        pipe.connectors.register_forward_hook(hook_connectors)
+        pipe.connectors.text_proj_in.register_forward_hook(hook_text_proj)
     
     prompt = "A man in a brightly lit room talks on a vintage telephone. In a low, heavy voice, he says, 'I understand. I won't call again. Goodbye.' He hangs up the receiver and looks down with a sad expression. He holds the black rotary phone to his right ear with his right hand, his left hand holding a rocks glass with amber liquid. He wears a brown suit jacket over a white shirt, and a gold ring on his left ring finger. His short hair is neatly combed, and he has light skin with visible wrinkles around his eyes. The camera remains stationary, focused on his face and upper body. The room is brightly lit by a warm light source off-screen to the left, casting shadows on the wall behind him. The scene appears to be from a dramatic movie."
     negative_prompt = "shaky, glitchy, low quality, worst quality, deformed, distorted, disfigured, motion smear, motion artifacts, fused fingers, bad anatomy, weird hand, ugly, transition, static."

@@ -42,9 +42,19 @@ def main():
     import diffusers.pipelines.ltx2.connectors as connectors
     
     orig_forward = connectors.LTX2ConnectorTransformer1d.forward
-    def patched_connector_forward(self, hidden_states, attention_mask, **kwargs):
+    def patched_connector_forward(self, hidden_states, attention_mask, attn_mask_binarize_threshold=-9000.0, **kwargs):
+        binary_attn_mask = (attention_mask >= attn_mask_binarize_threshold).int()
+        if binary_attn_mask.ndim == 4:
+            binary_attn_mask = binary_attn_mask.squeeze(1).squeeze(1)
+        flipped_mask = torch.flip(binary_attn_mask, dims=[1]).unsqueeze(-1)
+        
+        print("\n[DIFFUSERS] Mask Debug:")
+        print(f"  Input Attn Mask min/max: {attention_mask.min().item():.2f} / {attention_mask.max().item():.2f}")
+        print(f"  Binary Mask sum: {binary_attn_mask.sum().item()} (valid tokens)")
+        print(f"  Flipped Mask sum: {flipped_mask.sum().item()} (first 20 elements: {flipped_mask[0, :20, 0].cpu().numpy().tolist()})")
+        
         if self.learnable_registers is not None:
-            print(f"\n[DIFFUSERS] Connector Registers std: {self.learnable_registers.std().item():.5f}, mean: {self.learnable_registers.mean().item():.5f}, min: {self.learnable_registers.min().item():.5f}")
+            print(f"  [DIFFUSERS] Connector Registers std: {self.learnable_registers.std().item():.5f}, mean: {self.learnable_registers.mean().item():.5f}, min: {self.learnable_registers.min().item():.5f}")
         return orig_forward(self, hidden_states, attention_mask, **kwargs)
         
     connectors.LTX2ConnectorTransformer1d.forward = patched_connector_forward

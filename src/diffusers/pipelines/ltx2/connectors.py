@@ -246,6 +246,15 @@ class LTX2ConnectorTransformer1d(nn.Module):
             if torch.is_grad_enabled() and self.gradient_checkpointing:
                 hidden_states = self._gradient_checkpointing_func(block, hidden_states, attention_mask, rotary_emb)
             else:
+                if i == 0:
+                     print(f"\n[DIFFUSERS W] to_q std: {block.attn1.to_q.weight.std().item():.5f}, to_q bias: {block.attn1.to_q.bias.std().item():.5f}")
+                     print(f"[DIFFUSERS W] to_k std: {block.attn1.to_k.weight.std().item():.5f}, to_k bias: {block.attn1.to_k.bias.std().item():.5f}")
+                     print(f"[DIFFUSERS W] to_v std: {block.attn1.to_v.weight.std().item():.5f}, to_v bias: {block.attn1.to_v.bias.std().item():.5f}")
+                     print(f"[DIFFUSERS W] to_out std: {block.attn1.to_out[0].weight.std().item():.5f}, to_out bias: {block.attn1.to_out[0].bias.std().item():.5f}")
+                     print(f"[DIFFUSERS W] norm_q std: {block.attn1.norm_q.weight.std().item():.5f}")
+                     if attention_mask is not None:
+                         print(f"[DIFFUSERS MASK] supplied to attention kernel sum: {attention_mask.sum().item()}")
+
                 normed = block.norm1(hidden_states)
                 print(f"DEBUG: diffusers block {i} norm1. min: {normed.min().item():.5f}, max: {normed.max().item():.5f}, mean: {normed.mean().item():.5f}, std: {normed.std().item():.5f}")
                 attn = block.attn1(normed, attention_mask=attention_mask, query_rotary_emb=rotary_emb)

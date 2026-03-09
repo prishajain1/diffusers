@@ -208,6 +208,10 @@ class LTX2ConnectorTransformer1d(nn.Module):
         # hidden_states shape: [batch_size, seq_len, hidden_dim]
         # attention_mask shape: [batch_size, seq_len] or [batch_size, 1, 1, seq_len]
         batch_size, seq_len, _ = hidden_states.shape
+        
+        # Debug print 1: Start
+        print(f"\\nDEBUG: diffusers LTX2Connector Start. hidden_states shape: {hidden_states.shape}")
+        print(f"   min: {hidden_states.min().item():.5f}, max: {hidden_states.max().item():.5f}, mean: {hidden_states.mean().item():.5f}, std: {hidden_states.std().item():.5f}")
 
         # 1. Replace padding with learned registers, if using
         if self.learnable_registers is not None:
@@ -237,6 +241,10 @@ class LTX2ConnectorTransformer1d(nn.Module):
 
             # Overwrite attention_mask with an all-zeros mask if using registers.
             attention_mask = torch.zeros_like(attention_mask)
+            
+            # Debug print 2: After Padding Replacement
+            print(f"DEBUG: After replacing padded with registers. hidden_states shape: {hidden_states.shape}")
+            print(f"   min: {hidden_states.min().item():.5f}, max: {hidden_states.max().item():.5f}, mean: {hidden_states.mean().item():.5f}, std: {hidden_states.std().item():.5f}")
 
         # 2. Calculate 1D RoPE positional embeddings
         rotary_emb = self.rope(batch_size, seq_len, device=hidden_states.device)
@@ -248,7 +256,15 @@ class LTX2ConnectorTransformer1d(nn.Module):
             else:
                 hidden_states = block(hidden_states, attention_mask=attention_mask, rotary_emb=rotary_emb)
 
+        # Debug print 3: After scan
+        print(f"DEBUG: After transformer blocks scan.")
+        print(f"   min: {hidden_states.min().item():.5f}, max: {hidden_states.max().item():.5f}, mean: {hidden_states.mean().item():.5f}, std: {hidden_states.std().item():.5f}")
+
         hidden_states = self.norm_out(hidden_states)
+
+        # Debug print 4: Final Norm
+        print(f"DEBUG: After final norm.")
+        print(f"   min: {hidden_states.min().item():.5f}, max: {hidden_states.max().item():.5f}, mean: {hidden_states.mean().item():.5f}, std: {hidden_states.std().item():.5f}")
 
         return hidden_states, attention_mask
 

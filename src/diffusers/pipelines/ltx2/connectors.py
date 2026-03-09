@@ -246,26 +246,12 @@ class LTX2ConnectorTransformer1d(nn.Module):
             if torch.is_grad_enabled() and self.gradient_checkpointing:
                 hidden_states = self._gradient_checkpointing_func(block, hidden_states, attention_mask, rotary_emb)
             else:
-                if i == 0:
-                     print(f"\n[DIFFUSERS W] to_q std: {block.attn1.to_q.weight.std().item():.5f}, to_q bias: {block.attn1.to_q.bias.std().item():.5f}")
-                     print(f"[DIFFUSERS W] to_k std: {block.attn1.to_k.weight.std().item():.5f}, to_k bias: {block.attn1.to_k.bias.std().item():.5f}")
-                     print(f"[DIFFUSERS W] to_v std: {block.attn1.to_v.weight.std().item():.5f}, to_v bias: {block.attn1.to_v.bias.std().item():.5f}")
-                     print(f"[DIFFUSERS W] to_out std: {block.attn1.to_out[0].weight.std().item():.5f}, to_out bias: {block.attn1.to_out[0].bias.std().item():.5f}")
-                     print(f"[DIFFUSERS W] norm_q std: {block.attn1.norm_q.weight.std().item():.5f}")
-                     if attention_mask is not None:
-                         print(f"[DIFFUSERS MASK] supplied to attention kernel sum: {attention_mask.sum().item()}")
-
                 normed = block.norm1(hidden_states)
                 print(f"DEBUG: diffusers block {i} norm1. min: {normed.min().item():.5f}, max: {normed.max().item():.5f}, mean: {normed.mean().item():.5f}, std: {normed.std().item():.5f}")
-                attn = block.attn1(normed, attention_mask=attention_mask, query_rotary_emb=rotary_emb)
-                print(f"DEBUG: diffusers block {i} attn1. min: {attn.min().item():.5f}, max: {attn.max().item():.5f}, mean: {attn.mean().item():.5f}, std: {attn.std().item():.5f}")
-                hidden_states = hidden_states + attn
-                
-                normed2 = block.norm2(hidden_states)
-                print(f"DEBUG: diffusers block {i} norm2. min: {normed2.min().item():.5f}, max: {normed2.max().item():.5f}, mean: {normed2.mean().item():.5f}, std: {normed2.std().item():.5f}")
-                ff = block.ff(normed2)
-                print(f"DEBUG: diffusers block {i} ff.    min: {ff.min().item():.5f}, max: {ff.max().item():.5f}, mean: {ff.mean().item():.5f}, std: {ff.std().item():.5f}")
-                hidden_states = hidden_states + ff
+                attn_out = block.attn1(normed, attention_mask=attention_mask, query_rotary_emb=rotary_emb)
+                print(f"DEBUG: diffusers block {i} attn1. min: {attn_out.min().item():.5f}, max: {attn_out.max().item():.5f}, mean: {attn_out.mean().item():.5f}, std: {attn_out.std().item():.5f}")
+                hidden_states = hidden_states + attn_out
+                hidden_states = hidden_states + block.ff(block.norm2(hidden_states))
         hidden_states = self.norm_out(hidden_states)
 
         return hidden_states, attention_mask

@@ -77,20 +77,14 @@ def main():
     pipe = LTX2Pipeline.from_pretrained("Lightricks/LTX-2", torch_dtype=torch.bfloat16)
     pipe.to("cuda" if torch.cuda.is_available() else "cpu")
     
-    orig_block_forward = connectors.LTX2TransformerBlock1d.forward
-    def patched_block_forward(self, hidden_states, *args, **kwargs):
-        print(f"\n[DIFFUSERS W] to_q std: {self.attn1.to_q.weight.std().item():.5f}, to_q bias: {self.attn1.to_q.bias.std().item():.5f}")
-        print(f"[DIFFUSERS W] to_k std: {self.attn1.to_k.weight.std().item():.5f}, to_k bias: {self.attn1.to_k.bias.std().item():.5f}")
-        print(f"[DIFFUSERS W] to_v std: {self.attn1.to_v.weight.std().item():.5f}, to_v bias: {self.attn1.to_v.bias.std().item():.5f}")
-        print(f"[DIFFUSERS W] to_out std: {self.attn1.to_out[0].weight.std().item():.5f}, to_out bias: {self.attn1.to_out[0].bias.std().item():.5f}")
-        print(f"[DIFFUSERS W] norm_q std: {self.attn1.norm_q.weight.std().item():.5f}")
+    def hook_block_forward(module, input_tuple, output):
+        print(f"\n[DIFFUSERS W] to_q std: {module.attn1.to_q.weight.std().item():.5f}, to_q bias: {module.attn1.to_q.bias.std().item():.5f}")
+        print(f"[DIFFUSERS W] to_k std: {module.attn1.to_k.weight.std().item():.5f}, to_k bias: {module.attn1.to_k.bias.std().item():.5f}")
+        print(f"[DIFFUSERS W] to_v std: {module.attn1.to_v.weight.std().item():.5f}, to_v bias: {module.attn1.to_v.bias.std().item():.5f}")
+        print(f"[DIFFUSERS W] to_out std: {module.attn1.to_out[0].weight.std().item():.5f}, to_out bias: {module.attn1.to_out[0].bias.std().item():.5f}")
+        print(f"[DIFFUSERS W] norm_q std: {module.attn1.norm_q.weight.std().item():.5f}")
         
-        if "attention_mask" in kwargs and kwargs["attention_mask"] is not None:
-             print(f"[DIFFUSERS MASK] supplied to attention kernel sum: {kwargs['attention_mask'].sum().item()}")
-        
-        return orig_block_forward(self, hidden_states, *args, **kwargs)
-    
-    connectors.LTX2TransformerBlock1d.forward = patched_block_forward
+    pipe.connectors.video_connector.transformer_blocks[0].register_forward_hook(hook_block_forward)
     
     # Patch Transformer forward pass to intercept inputs and EXIT EARLY
     orig_transformer_forward = type(pipe.transformer).forward

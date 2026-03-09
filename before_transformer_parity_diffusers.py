@@ -39,6 +39,23 @@ def hook_text_proj(module, input, output):
     print_stat("text_proj_out", output)
 
 def main():
+    import diffusers.pipelines.ltx2.connectors as connectors
+    
+    orig_forward = connectors.LTX2ConnectorTransformer1d.forward
+    def patched_connector_forward(self, hidden_states, attention_mask, **kwargs):
+        if self.learnable_registers is not None:
+            print(f"\n[DIFFUSERS] Connector Registers std: {self.learnable_registers.std().item():.5f}, mean: {self.learnable_registers.mean().item():.5f}, min: {self.learnable_registers.min().item():.5f}")
+        return orig_forward(self, hidden_states, attention_mask, **kwargs)
+        
+    connectors.LTX2ConnectorTransformer1d.forward = patched_connector_forward
+
+    orig_block_forward = connectors.LTX2TransformerBlock1d.forward
+    def patched_block_forward(self, hidden_states, *args, **kwargs):
+        print(f"[DIFFUSERS] Block Input (Pre-Norm) std: {hidden_states.std().item():.5f}, min: {hidden_states.min().item():.5f}, max: {hidden_states.max().item():.5f}")
+        return orig_block_forward(self, hidden_states, *args, **kwargs)
+    
+    connectors.LTX2TransformerBlock1d.forward = patched_block_forward
+
     pipe = LTX2Pipeline.from_pretrained("Lightricks/LTX-2", torch_dtype=torch.bfloat16)
     pipe.to("cuda" if torch.cuda.is_available() else "cpu")
     

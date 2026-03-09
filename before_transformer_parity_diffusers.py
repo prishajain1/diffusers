@@ -43,28 +43,34 @@ def main():
     
     orig_forward = connectors.LTX2ConnectorTransformer1d.forward
     def patched_connector_forward(self, hidden_states, attention_mask, attn_mask_binarize_threshold=-9000.0, **kwargs):
-        binary_attn_mask = (attention_mask >= attn_mask_binarize_threshold).int()
-        if binary_attn_mask.ndim == 4:
-            binary_attn_mask = binary_attn_mask.squeeze(1).squeeze(1)
-        flipped_mask = torch.flip(binary_attn_mask, dims=[1]).unsqueeze(-1)
-        
-        print("\n[DIFFUSERS] Mask Debug:")
-        print(f"  Input Attn Mask min/max: {attention_mask.min().item():.2f} / {attention_mask.max().item():.2f}")
-        print(f"  Binary Mask sum: {binary_attn_mask.sum().item()} (valid tokens)")
-        print(f"  Flipped Mask sum: {flipped_mask.sum().item()} (first 20 elements: {flipped_mask[0, :20, 0].cpu().numpy().tolist()})")
+        # We need to manually do the first half to get hidden states before the block
+        batch_size, seq_len, _ = hidden_states.shape
+        orig_hidden_states = hidden_states.clone()
         
         if self.learnable_registers is not None:
-            print(f"  [DIFFUSERS] Connector Registers std: {self.learnable_registers.std().item():.5f}, mean: {self.learnable_registers.mean().item():.5f}, min: {self.learnable_registers.min().item():.5f}")
-        return orig_forward(self, hidden_states, attention_mask, **kwargs)
+            num_register_repeats = seq_len // self.num_learnable_registers
+            registers = torch.tile(self.learnable_registers, (num_register_repeats, 1))
+
+            binary_attn_mask = (attention_mask >= attn_mask_binarize_threshold).int()
+            if binary_attn_mask.ndim == 4:
+                binary_attn_mask = binary_attn_mask.squeeze(1).squeeze(1)
+
+            hidden_states_non_padded = [orig_hidden_states[i, binary_attn_mask[i].bool(), :] for i in range(batch_size)]
+            valid_seq_lens = [x.shape[0] for x in hidden_states_non_padded]
+            pad_lengths = [seq_len - valid_seq_len for valid_seq_len in valid_seq_lens]
+            padded_hidden_states = [
+                torch.nn.functional.pad(x, pad=(0, 0, 0, p), value=0) for x, p in zip(hidden_states_non_padded, pad_lengths)
+            ]
+            padded_hidden_states = torch.cat([x.unsqueeze(0) for x in padded_hidden_states], dim=0)
+
+            flipped_mask = torch.flip(binary_attn_mask, dims=[1]).unsqueeze(-1)
+            hidden_states = flipped_mask * padded_hidden_states + (1 - flipped_mask) * registers
+            
+            print(f"\n[DIFFUSERS] After Replacement std: {hidden_states.std().item():.5f}, mean: {hidden_states.mean().item():.5f}, min: {hidden_states.min().item():.5f}")
+
+        return orig_forward(self, orig_hidden_states, attention_mask, **kwargs)
         
     connectors.LTX2ConnectorTransformer1d.forward = patched_connector_forward
-
-    orig_block_forward = connectors.LTX2TransformerBlock1d.forward
-    def patched_block_forward(self, hidden_states, *args, **kwargs):
-        print(f"[DIFFUSERS] Block Input (Pre-Norm) std: {hidden_states.std().item():.5f}, min: {hidden_states.min().item():.5f}, max: {hidden_states.max().item():.5f}")
-        return orig_block_forward(self, hidden_states, *args, **kwargs)
-    
-    connectors.LTX2TransformerBlock1d.forward = patched_block_forward
 
     pipe = LTX2Pipeline.from_pretrained("Lightricks/LTX-2", torch_dtype=torch.bfloat16)
     pipe.to("cuda" if torch.cuda.is_available() else "cpu")

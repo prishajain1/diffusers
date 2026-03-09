@@ -64,13 +64,30 @@ def main():
             padded_hidden_states = torch.cat([x.unsqueeze(0) for x in padded_hidden_states], dim=0)
 
             flipped_mask = torch.flip(binary_attn_mask, dims=[1]).unsqueeze(-1)
-            hidden_states = flipped_mask * padded_hidden_states + (1 - flipped_mask) * registers
             
-            print(f"\n[DIFFUSERS] After Replacement std: {hidden_states.std().item():.5f}, mean: {hidden_states.mean().item():.5f}, min: {hidden_states.min().item():.5f}")
-
+            print("\n[DIFFUSERS MASK DEBUG]")
+            print(f"  Input Attn Mask sum: {attention_mask.sum().item():.2f}")
+            print(f"  Binary Mask sum: {binary_attn_mask.sum().item()} (start elements: {binary_attn_mask[0, :10].cpu().numpy().tolist()})")
+            print(f"  Flipped Mask sum: {flipped_mask.sum().item()} (start elements: {flipped_mask[0, :10, 0].cpu().numpy().tolist()})")
+            
         return orig_forward(self, orig_hidden_states, attention_mask, **kwargs)
         
     connectors.LTX2ConnectorTransformer1d.forward = patched_connector_forward
+
+    orig_block_forward = type(pipe.text_encoder.transformer.transformer_blocks[0]).forward
+    def patched_block_forward(self, hidden_states, *args, **kwargs):
+        print(f"\n[DIFFUSERS W] to_q std: {self.attn1.to_q.weight.std().item():.5f}, to_q bias: {self.attn1.to_q.bias.std().item():.5f}")
+        print(f"[DIFFUSERS W] to_k std: {self.attn1.to_k.weight.std().item():.5f}, to_k bias: {self.attn1.to_k.bias.std().item():.5f}")
+        print(f"[DIFFUSERS W] to_v std: {self.attn1.to_v.weight.std().item():.5f}, to_v bias: {self.attn1.to_v.bias.std().item():.5f}")
+        print(f"[DIFFUSERS W] to_out std: {self.attn1.to_out[0].weight.std().item():.5f}, to_out bias: {self.attn1.to_out[0].bias.std().item():.5f}")
+        print(f"[DIFFUSERS W] norm_q std: {self.attn1.norm_q.weight.std().item():.5f}")
+        
+        if "attention_mask" in kwargs and kwargs["attention_mask"] is not None:
+             print(f"[DIFFUSERS MASK] supplied to attention kernel sum: {kwargs['attention_mask'].sum().item()}")
+        
+        return orig_block_forward(self, hidden_states, *args, **kwargs)
+    
+    type(pipe.text_encoder.transformer.transformer_blocks[0]).forward = patched_block_forward
 
     pipe = LTX2Pipeline.from_pretrained("Lightricks/LTX-2", torch_dtype=torch.bfloat16)
     pipe.to("cuda" if torch.cuda.is_available() else "cpu")

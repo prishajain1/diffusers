@@ -37,15 +37,22 @@ def hook_text_proj(module, input, output):
     print("\n=== FEATURE EXTRACTOR / TEXT PROJ OUTPUTS ===")
     print_stat("packed_text_embeds", input[0])
     print_stat("text_proj_out", output)
+    np.save("packed_text_embeds_pt.npy", input[0].detach().cpu().float().numpy())
+    np.save("text_proj_out_pt.npy", output.detach().cpu().float().numpy())
 
 def main():
     import diffusers.pipelines.ltx2.connectors as connectors
     
     orig_forward = connectors.LTX2ConnectorTransformer1d.forward
-    def patched_connector_forward(self, hidden_states, attention_mask, attn_mask_binarize_threshold=-9000.0, **kwargs):
+    def patched_connector_forward(self, orig_hidden_states, attention_mask, attn_mask_binarize_threshold=-9000.0, **kwargs):
+        print(f"\n=== LTX2 CONNECTOR FORWARD (DIFFUSERS) ===")
+        print(f"[DIFFUSERS W] to_q std: {self.transformer_blocks[0].attn1.to_q.weight.std().item():.5f}, min: {self.transformer_blocks[0].attn1.to_q.weight.min().item():.5f}, max: {self.transformer_blocks[0].attn1.to_q.weight.max().item():.5f}")
+        print(f"[DIFFUSERS W] to_k std: {self.transformer_blocks[0].attn1.to_k.weight.std().item():.5f}, min: {self.transformer_blocks[0].attn1.to_k.weight.min().item():.5f}, max: {self.transformer_blocks[0].attn1.to_k.weight.max().item():.5f}")
+        print(f"[DIFFUSERS W] to_v std: {self.transformer_blocks[0].attn1.to_v.weight.std().item():.5f}, min: {self.transformer_blocks[0].attn1.to_v.weight.min().item():.5f}, max: {self.transformer_blocks[0].attn1.to_v.weight.max().item():.5f}")
+        print(f"[DIFFUSERS W] to_out std: {self.transformer_blocks[0].attn1.to_out[0].weight.std().item():.5f}, min: {self.transformer_blocks[0].attn1.to_out[0].weight.min().item():.5f}, max: {self.transformer_blocks[0].attn1.to_out[0].weight.max().item():.5f}")
+        print_stat("connector_hidden_states_in", orig_hidden_states)
         # We need to manually do the first half to get hidden states before the block
-        batch_size, seq_len, _ = hidden_states.shape
-        orig_hidden_states = hidden_states.clone()
+        batch_size, seq_len, _ = orig_hidden_states.shape
         
         if self.learnable_registers is not None:
             num_register_repeats = seq_len // self.num_learnable_registers
@@ -65,10 +72,15 @@ def main():
 
             flipped_mask = torch.flip(binary_attn_mask, dims=[1]).unsqueeze(-1)
             
-            print("\n[DIFFUSERS MASK DEBUG]")
             print(f"  Input Attn Mask sum: {attention_mask.sum().item():.2f}")
             print(f"  Binary Mask sum: {binary_attn_mask.sum().item()} (start elements: {binary_attn_mask[0, :10].cpu().numpy().tolist()})")
             print(f"  Flipped Mask sum: {flipped_mask.sum().item()} (start elements: {flipped_mask[0, :10, 0].cpu().numpy().tolist()})")
+            
+            # Save inputs for MaxDiffusion sync
+            np.save("connector_hidden_states_in_pt.npy", orig_hidden_states.cpu().float().numpy())
+            np.save("connector_attention_mask_in_pt.npy", attention_mask.cpu().float().numpy())
+            np.save("connector_registers_pt.npy", self.learnable_registers.cpu().float().numpy())
+            print("Saved connector inputs and registers to .npy files!")
             
         return orig_forward(self, orig_hidden_states, attention_mask, **kwargs)
         

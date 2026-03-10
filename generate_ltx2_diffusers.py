@@ -121,7 +121,7 @@ def generate_video():
         pipeline = pipeline.to("cpu")
 
     # Generation parameters matching maxdiffusion's ltx2_video.yml
-    prompt = "A cute, fluffy purple monster wearing a professional suit and glasses, sitting at a tiny desk with a laptop. The monster looks up, waves a paw at the camera, and enthusiastically says, 'This video is brought to you by LTX-2'. Vibrant colors, Pixar-style animation, soft fur simulation, depth of field."
+    prompt = "A chef enters a busy kitchen, weaving between prep stations as steam rises from pots. The camera follows in a smooth tracking shot as he reaches his station, ties his apron, and begins chopping vegetables with practiced precision. Other chefs work in the background, creating a layered scene of culinary activity."
     negative_prompt = "shaky, glitchy, low quality, worst quality, deformed, distorted, disfigured, motion smear, motion artifacts, fused fingers, bad anatomy, weird hand, ugly, transition, static."
     
     # In diffusers, num_frames is the number of latent frames if not fully decoded, 

@@ -41,8 +41,6 @@ def get_hook(name):
         elif hasattr(output, "hidden_states") and output.hidden_states is not None:
              t = output.hidden_states[-1].cpu().float().numpy()
              print_stat(name, t)
-             if name == "text_encoder":
-                 np.save("diffusers_text_encoder.npy", t)
         elif hasattr(output, "last_hidden_state"):
             print_stat(name, output.last_hidden_state)
         elif type(output).__name__ == "LTX2PipelineOutput":
@@ -53,33 +51,6 @@ def get_hook(name):
                 print_stat(name, out)
     return hook
 
-def hook_connectors(module, input, output):
-    print_stat("connectors_input", input[0])
-    print_stat("connectors_video", output[0])
-    print_stat("connectors_audio", output[1])
-
-from diffusers.pipelines.ltx2 import pipeline_ltx2
-
-def hook_transformer_pre(module, args, kwargs):
-    hidden_states = kwargs.get("hidden_states")
-    if hidden_states is None and len(args) > 0:
-        hidden_states = args[0]
-        
-    audio_hidden_states = kwargs.get("audio_hidden_states")
-    if audio_hidden_states is None and len(args) > 1:
-        audio_hidden_states = args[1]
-        
-    timestep = kwargs.get("timestep")
-    if timestep is None and len(args) > 4:
-        timestep = args[4]
-        
-    if hidden_states is not None:
-        print_stat("transformer_input_video_latents", hidden_states)
-    if audio_hidden_states is not None:
-        print_stat("transformer_input_audio_latents", audio_hidden_states)
-    if timestep is not None:
-        print_stat("transformer_timestep", timestep)
-
 def hook_transformer(module, input, output):
     out = output if isinstance(output, tuple) else (output[0], output[1])
     print_stat("transformer_video", out[0])
@@ -89,15 +60,7 @@ def set_hooks(pipe):
     # Patch Transformer forward pass
     orig_transformer_forward = type(pipe.transformer).forward
     def patched_transformer_forward(self, *args, **kwargs):
-        print("\n=== TRANSFORMER INPUTS ===")
-        if "hidden_states" in kwargs:
-             print_stat("transformer_input_video_latents", kwargs["hidden_states"])
-        if "audio_hidden_states" in kwargs:
-             print_stat("transformer_input_audio_latents", kwargs["audio_hidden_states"])
-        if "timestep" in kwargs:
-             print_stat("transformer_timestep", kwargs["timestep"])
         out = orig_transformer_forward(self, *args, **kwargs)
-        print("\n=== TRANSFORMER OUTPUTS ===")
         
         if hasattr(out, "sample"):
             print_stat("transformer_video", out.sample)
@@ -111,6 +74,13 @@ def set_hooks(pipe):
              print_stat("transformer_video", out)
         return out
     type(pipe.transformer).forward = patched_transformer_forward
+
+    def hook_text_proj(module, input, output):
+        print_stat("packed_text_embeds", input[0])
+        print_stat("text_proj_out", output)
+        
+    if hasattr(pipe, 'connectors') and hasattr(pipe.connectors, 'text_proj_in'):
+        pipe.connectors.text_proj_in.register_forward_hook(hook_text_proj)
 
     if hasattr(pipe, 'vae'):
         pipe.vae.decoder.register_forward_hook(get_hook('vae_decoder'))

@@ -121,7 +121,7 @@ def generate_video():
         pipeline = pipeline.to("cpu")
 
     # Generation parameters matching maxdiffusion's ltx2_video.yml
-    prompt = "A man in a brightly lit room talks on a vintage telephone. In a low, heavy voice, he says, 'I understand. I won't call again. Goodbye.' He hangs up the receiver and looks down with a sad expression. He holds the black rotary phone to his right ear with his right hand, his left hand holding a rocks glass with amber liquid. He wears a brown suit jacket over a white shirt, and a gold ring on his left ring finger. His short hair is neatly combed, and he has light skin with visible wrinkles around his eyes. The camera remains stationary, focused on his face and upper body. The room is brightly lit by a warm light source off-screen to the left, casting shadows on the wall behind him. The scene appears to be from a dramatic movie."
+    prompt = "A cute, fluffy purple monster wearing a professional suit and glasses, sitting at a tiny desk with a laptop. The monster looks up, waves a paw at the camera, and enthusiastically says, 'This video is brought to you by LTX-2'. Vibrant colors, Pixar-style animation, soft fur simulation, depth of field."
     negative_prompt = "shaky, glitchy, low quality, worst quality, deformed, distorted, disfigured, motion smear, motion artifacts, fused fingers, bad anatomy, weird hand, ugly, transition, static."
     
     # In diffusers, num_frames is the number of latent frames if not fully decoded, 

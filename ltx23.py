@@ -6,7 +6,7 @@ import torch
 import av
 
 # Add src to path to import from local diffusers repo
-sys.path.append(os.path.abspath("src"))
+sys.path.insert(0, os.path.abspath("src"))
 from diffusers.pipelines.ltx2.pipeline_ltx2 import LTX2Pipeline
 
 # Helper functions for saving video with audio (copied from MaxDiffusion)

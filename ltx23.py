@@ -143,10 +143,12 @@ seed = 10
 
 print("Loading LTX2Pipeline...")
 pipe = LTX2Pipeline.from_pretrained("dg845/LTX-2.3-Diffusers", torch_dtype=torch.bfloat16)
-pipe.to("cuda")  # Assuming CUDA since user mentioned VM, or will adjust if needed
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"Using device: {device}")
+pipe.to(device)
 
 print("Generating...")
-generator = torch.Generator("cuda").manual_seed(seed)
+generator = torch.Generator(device).manual_seed(seed)
 out = pipe(
     prompt=prompt,
     negative_prompt=negative_prompt,

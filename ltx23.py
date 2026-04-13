@@ -142,7 +142,7 @@ fps = 24
 seed = 10
 
 print("Loading LTX2Pipeline...")
-pipe = LTX2Pipeline.from_pretrained("Lightricks/LTX-2.3", torch_dtype=torch.bfloat16)
+pipe = LTX2Pipeline.from_pretrained("dg845/LTX-2.3-Diffusers", torch_dtype=torch.bfloat16)
 pipe.to("cuda")  # Assuming CUDA since user mentioned VM, or will adjust if needed
 
 print("Generating...")

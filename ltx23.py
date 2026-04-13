@@ -173,11 +173,14 @@ audios = out.audio
 output_path = f"./ltx2_output_{seed}_0.mp4"
 
 print(f"Saving output to {output_path}...")
+audio_payload = audios[0]
+if audio_payload is not None and torch.is_tensor(audio_payload):
+    audio_payload = audio_payload.to(torch.float32).cpu()
 export_to_video_with_audio(
     video=videos[0],
     fps=fps,
-    audio=audios[0] if audios is not None else None,
-    audio_sample_rate=24000,  # Default for LTX2 audio
+    audio=audio_payload,
+    audio_sample_rate=24000, 
     output_path=output_path,
 )
 print("Done!")

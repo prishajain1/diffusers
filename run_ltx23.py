@@ -8,7 +8,10 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using device: {device}")
 
 # Load pipeline
-pipe = LTX2Pipeline.from_pretrained("dg845/LTX-2.3-Diffusers", torch_dtype=torch.bfloat16)
+from diffusers.models.transformers.transformer_ltx2 import LTX2VideoTransformer3DModel
+
+transformer = LTX2VideoTransformer3DModel.from_pretrained("dg845/LTX-2.3-Diffusers", subfolder="transformer", cross_attn_mod=True, torch_dtype=torch.bfloat16)
+pipe = LTX2Pipeline.from_pretrained("dg845/LTX-2.3-Diffusers", transformer=transformer, torch_dtype=torch.bfloat16)
 pipe.to(device)
 
 prompt = "A dog running on the left of a bicycle"

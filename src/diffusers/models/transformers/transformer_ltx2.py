@@ -620,8 +620,17 @@ class LTX2VideoTransformerBlock(nn.Module):
         use_v2a_cross_attention: bool = True,
         perturbation_mask: torch.Tensor | None = None,
         all_perturbed: bool | None = None,
+        layer_id: int = 0,
     ) -> torch.Tensor:
         batch_size = hidden_states.size(0)
+
+        def _print_layer_stats(name, tensor):
+            print(
+                f"DEBUG Layer {layer_id} {name} shape: {tensor.shape}, mean: {tensor.mean().item():.4f}, min: {tensor.min().item():.4f}, max: {tensor.max().item():.4f}, std: {tensor.std().item():.4f}"
+            )
+
+        _print_layer_stats("input_video", hidden_states)
+        _print_layer_stats("input_audio", audio_hidden_states)
 
         # 1. Video and Audio Self-Attention
         # 1.1. Video Self-Attention
@@ -645,6 +654,7 @@ class LTX2VideoTransformerBlock(nn.Module):
 
         attn_hidden_states = self.attn1(**video_self_attn_args)
         hidden_states = hidden_states + attn_hidden_states * gate_msa
+        _print_layer_stats("after_self_attn_video", hidden_states)
 
         # 1.2. Audio Self-Attention
         audio_ada_params = self.get_mod_params(self.audio_scale_shift_table, temb_audio, batch_size)
@@ -669,6 +679,7 @@ class LTX2VideoTransformerBlock(nn.Module):
 
         attn_audio_hidden_states = self.audio_attn1(**audio_self_attn_args)
         audio_hidden_states = audio_hidden_states + attn_audio_hidden_states * audio_gate_msa
+        _print_layer_stats("after_self_attn_audio", audio_hidden_states)
 
         # 2. Video and Audio Cross-Attention with the text embeddings (Q: Video or Audio; K,V: Text)
         if self.cross_attn_adaln:
@@ -696,6 +707,7 @@ class LTX2VideoTransformerBlock(nn.Module):
         if self.video_cross_attn_adaln:
             attn_hidden_states = attn_hidden_states * gate_text_q
         hidden_states = hidden_states + attn_hidden_states
+        _print_layer_stats("after_prompt_attn_video", hidden_states)
 
         # 2.2. Audio-Text Cross-Attention
         norm_audio_hidden_states = self.audio_norm2(audio_hidden_states)
@@ -713,6 +725,7 @@ class LTX2VideoTransformerBlock(nn.Module):
         if self.audio_cross_attn_adaln:
             attn_audio_hidden_states = attn_audio_hidden_states * audio_gate_text_q
         audio_hidden_states = audio_hidden_states + attn_audio_hidden_states
+        _print_layer_stats("after_prompt_attn_audio", audio_hidden_states)
 
         # 3. Audio-to-Video (a2v) and Video-to-Audio (v2a) Cross-Attention
         if use_a2v_cross_attention or use_v2a_cross_attention:
@@ -760,6 +773,7 @@ class LTX2VideoTransformerBlock(nn.Module):
                 )
 
                 hidden_states = hidden_states + a2v_gate * a2v_attn_hidden_states
+                _print_layer_stats("after_av_attn_video", hidden_states)
 
             # 3.3. Video-to-Audio Cross Attention: Q: Audio; K,V: Video
             if use_v2a_cross_attention:
@@ -779,6 +793,7 @@ class LTX2VideoTransformerBlock(nn.Module):
                 )
 
                 audio_hidden_states = audio_hidden_states + v2a_gate * v2a_attn_hidden_states
+                _print_layer_stats("after_av_attn_audio", audio_hidden_states)
 
         # 4. Feedforward
         norm_hidden_states = self.norm3(hidden_states) * (1 + scale_mlp) + shift_mlp
@@ -788,6 +803,9 @@ class LTX2VideoTransformerBlock(nn.Module):
         norm_audio_hidden_states = self.audio_norm3(audio_hidden_states) * (1 + audio_scale_mlp) + audio_shift_mlp
         audio_ff_output = self.audio_ff(norm_audio_hidden_states)
         audio_hidden_states = audio_hidden_states + audio_ff_output * audio_gate_mlp
+
+        _print_layer_stats("output_video", hidden_states)
+        _print_layer_stats("output_audio", audio_hidden_states)
 
         return hidden_states, audio_hidden_states
 

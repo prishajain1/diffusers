@@ -41,9 +41,6 @@ home_dir = os.path.expanduser("~")
 latents = torch.load(os.path.join(home_dir, "latents_jax.pt")).to(device=device, dtype=torch.bfloat16)
 audio_latents = torch.load(os.path.join(home_dir, "audio_latents_jax.pt")).to(device=device, dtype=torch.bfloat16)
 
-# Transpose video latents from MaxDiffusion (B, F, H, W, C) to Diffusers (B, C, F, H, W)
-latents = latents.permute(0, 4, 1, 2, 3)
-
 print(f"Loaded latents shape: {latents.shape}")
 print(f"Loaded audio_latents shape: {audio_latents.shape}")
 

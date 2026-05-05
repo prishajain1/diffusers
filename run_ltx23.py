@@ -10,7 +10,7 @@ print(f"Using device: {device}")
 # Load pipeline
 from diffusers.models.transformers.transformer_ltx2 import LTX2VideoTransformer3DModel
 
-transformer = LTX2VideoTransformer3DModel.from_pretrained("dg845/LTX-2.3-Diffusers", subfolder="transformer", cross_attn_mod=True, torch_dtype=torch.bfloat16)
+transformer = LTX2VideoTransformer3DModel.from_pretrained("dg845/LTX-2.3-Diffusers", subfolder="transformer", video_cross_attn_adaln=True, audio_cross_attn_adaln=True, torch_dtype=torch.bfloat16)
 pipe = LTX2Pipeline.from_pretrained("dg845/LTX-2.3-Diffusers", transformer=transformer, torch_dtype=torch.bfloat16)
 pipe.to(device)
 

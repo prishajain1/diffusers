@@ -38,18 +38,8 @@ negative_prompt = "shaky, glitchy, low quality, worst quality, deformed, distort
 
 # Load initial latents from MaxDiffusion
 home_dir = os.path.expanduser("~")
-latents_jax = np.load(os.path.join(home_dir, "latents_jax.npy"), allow_pickle=True)
-audio_latents_jax = np.load(os.path.join(home_dir, "audio_latents_jax.npy"), allow_pickle=True)
-
-# Cast to float32 if needed to avoid numpy.void or object array errors
-if latents_jax.dtype == np.void or latents_jax.dtype == object:
-    latents_jax = np.array(latents_jax.tolist(), dtype=np.float32)
-if audio_latents_jax.dtype == np.void or audio_latents_jax.dtype == object:
-    audio_latents_jax = np.array(audio_latents_jax.tolist(), dtype=np.float32)
-
-# Convert to torch tensors
-latents = torch.from_numpy(latents_jax.astype(np.float32)).to(device=device, dtype=torch.bfloat16)
-audio_latents = torch.from_numpy(audio_latents_jax.astype(np.float32)).to(device=device, dtype=torch.bfloat16)
+latents = torch.load(os.path.join(home_dir, "latents_jax.pt")).to(device=device, dtype=torch.bfloat16)
+audio_latents = torch.load(os.path.join(home_dir, "audio_latents_jax.pt")).to(device=device, dtype=torch.bfloat16)
 
 # Transpose video latents from MaxDiffusion (B, F, H, W, C) to Diffusers (B, C, F, H, W)
 latents = latents.permute(0, 4, 1, 2, 3)

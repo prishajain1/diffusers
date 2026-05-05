@@ -1119,7 +1119,7 @@ class LTX2VideoTransformer3DModel(
         base_height: int = 2048,
         base_width: int = 2048,
         gated_attn: bool = False,
-        cross_attn_mod: bool = False,
+        cross_attn_mod: bool = True,
         audio_in_channels: int = 128,  # Audio Arguments
         audio_out_channels: int | None = 128,
         audio_patch_size: int = 1,
@@ -1132,7 +1132,7 @@ class LTX2VideoTransformer3DModel(
         audio_sampling_rate: int = 16000,
         audio_hop_length: int = 160,
         audio_gated_attn: bool = False,
-        audio_cross_attn_mod: bool = False,
+        audio_cross_attn_mod: bool = True,
         num_layers: int = 48,  # Shared arguments
         activation_fn: str = "gelu-approximate",
         qk_norm: str = "rms_norm_across_heads",

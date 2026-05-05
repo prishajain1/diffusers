@@ -8,10 +8,23 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using device: {device}")
 
 # Load pipeline
-from diffusers.models.transformers.transformer_ltx2 import LTX2VideoTransformer3DModel
+from huggingface_hub import hf_hub_download
+import json
 
-transformer = LTX2VideoTransformer3DModel.from_pretrained("dg845/LTX-2.3-Diffusers", subfolder="transformer", video_cross_attn_adaln=True, audio_cross_attn_adaln=True, torch_dtype=torch.bfloat16)
-pipe = LTX2Pipeline.from_pretrained("dg845/LTX-2.3-Diffusers", transformer=transformer, torch_dtype=torch.bfloat16)
+config_file = hf_hub_download(repo_id="dg845/LTX-2.3-Diffusers", filename="config.json", subfolder="transformer")
+
+with open(config_file, "r") as f:
+    config_dict = json.load(f)
+
+config_dict["video_cross_attn_adaln"] = True
+config_dict["audio_cross_attn_adaln"] = True
+
+with open(config_file, "w") as f:
+    json.dump(config_dict, f, indent=2)
+
+print(f"Modified cached config file at: {config_file}")
+
+pipe = LTX2Pipeline.from_pretrained("dg845/LTX-2.3-Diffusers", torch_dtype=torch.bfloat16)
 pipe.to(device)
 
 prompt = "A dog running on the left of a bicycle"

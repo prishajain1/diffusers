@@ -1,6 +1,12 @@
+import sys
+import os
+
+# Dynamically resolve the local Diffusers src path relative to this script
+script_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(script_dir, "src"))
+
 import torch
 from diffusers import LTX2Pipeline
-import os
 import numpy as np
 
 # Ensure we use CPU if CUDA is not available

@@ -1086,6 +1086,14 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
             prompt_embeds, prompt_attention_mask, padding_side=tokenizer_padding_side
         )
 
+        def _print_stats(name, tensor):
+            print(
+                f"DEBUG {name} shape: {tensor.shape}, mean: {tensor.mean().item():.6f}, min: {tensor.min().item():.6f}, max: {tensor.max().item():.6f}, std: {tensor.std().item():.6f}"
+            )
+
+        _print_stats("video_text_embedding", connector_prompt_embeds)
+        _print_stats("audio_text_embedding", connector_audio_prompt_embeds)
+
         # 4. Prepare latent variables
         latent_num_frames = (num_frames - 1) // self.vae_temporal_compression_ratio + 1
         latent_height = height // self.vae_spatial_compression_ratio
@@ -1204,6 +1212,8 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
 
         # 7. Denoising loop
         with self.progress_bar(total=num_inference_steps) as progress_bar:
+            _print_stats("latents_before_loop", latents)
+            _print_stats("audio_latents_before_loop", audio_latents)
             for i, t in enumerate(timesteps):
                 if self.interrupt:
                     continue
@@ -1397,6 +1407,10 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                 # Convert back to velocity for scheduler
                 noise_pred_video = self.convert_x0_to_velocity(latents, noise_pred_video, i, self.scheduler)
                 noise_pred_audio = self.convert_x0_to_velocity(audio_latents, noise_pred_audio, i, audio_scheduler)
+
+                if i == 0:
+                    _print_stats("noise_pred_video_after_step", noise_pred_video)
+                    _print_stats("noise_pred_audio_after_step", noise_pred_audio)
 
                 # compute the previous noisy sample x_t -> x_t-1
                 latents = self.scheduler.step(noise_pred_video, t, latents, return_dict=False)[0]

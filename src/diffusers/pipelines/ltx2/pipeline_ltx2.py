@@ -1082,14 +1082,17 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
         tokenizer_padding_side = "left"  # Padding side for default Gemma3-12B text encoder
         if getattr(self, "tokenizer", None) is not None:
             tokenizer_padding_side = getattr(self.tokenizer, "padding_side", "left")
-        connector_prompt_embeds, connector_audio_prompt_embeds, connector_attention_mask = self.connectors(
-            prompt_embeds, prompt_attention_mask, padding_side=tokenizer_padding_side
-        )
 
         def _print_stats(name, tensor):
             print(
-                f"DEBUG {name} shape: {tensor.shape}, mean: {tensor.mean().item():.6f}, min: {tensor.min().item():.6f}, max: {tensor.max().item():.6f}, std: {tensor.std().item():.6f}"
+                f"DEBUG {name} shape: {tensor.shape}, mean: {tensor.mean().item():.6f}, min: {tensor.min().item():.4f}, max: {tensor.max().item():.4f}, std: {tensor.std().item():.4f}"
             )
+
+        _print_stats("text_encoder_output_flattened", prompt_embeds)
+
+        connector_prompt_embeds, connector_audio_prompt_embeds, connector_attention_mask = self.connectors(
+            prompt_embeds, prompt_attention_mask, padding_side=tokenizer_padding_side
+        )
 
         _print_stats("video_text_embedding", connector_prompt_embeds)
         _print_stats("audio_text_embedding", connector_audio_prompt_embeds)
@@ -1434,6 +1437,9 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                 if XLA_AVAILABLE:
                     xm.mark_step()
 
+        _print_stats("latents_after_loop", latents)
+        _print_stats("audio_latents_after_loop", audio_latents)
+
         latents = self._unpack_latents(
             latents,
             latent_num_frames,
@@ -1479,12 +1485,17 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
             )
 
             latents = latents.to(self.vae.dtype)
+            _print_stats("vae_input_latents", latents)
             video = self.vae.decode(latents, timestep, return_dict=False)[0]
+            _print_stats("vae_output_video_raw", video)
             video = self.video_processor.postprocess_video(video, output_type=output_type)
 
             audio_latents = audio_latents.to(self.audio_vae.dtype)
+            _print_stats("audio_vae_input_latents", audio_latents)
             generated_mel_spectrograms = self.audio_vae.decode(audio_latents, return_dict=False)[0]
+            _print_stats("audio_vae_output_mel", generated_mel_spectrograms)
             audio = self.vocoder(generated_mel_spectrograms)
+            _print_stats("vocoder_output_audio", audio)
 
         # Offload all models
         self.maybe_free_model_hooks()

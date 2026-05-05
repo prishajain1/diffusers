@@ -44,6 +44,8 @@ audio_latents = torch.load(os.path.join(home_dir, "audio_latents_jax.pt")).to(de
 print(f"Loaded latents shape: {latents.shape}")
 print(f"Loaded audio_latents shape: {audio_latents.shape}")
 
+print(f"WEIGHT DEBUG: block 0 to_q weight mean: {pipe.transformer.transformer_blocks[0].attn1.to_q.weight.mean().item():.6f}")
+
 # Run inference
 print("Starting inference...")
 with torch.no_grad():

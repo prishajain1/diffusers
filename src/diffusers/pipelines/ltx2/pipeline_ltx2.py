@@ -1088,14 +1088,9 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                 f"DEBUG {name} shape: {tensor.shape}, mean: {tensor.mean().item():.6f}, min: {tensor.min().item():.4f}, max: {tensor.max().item():.4f}, std: {tensor.std().item():.4f}"
             )
 
-        _print_stats("text_encoder_output_flattened", prompt_embeds)
-
         connector_prompt_embeds, connector_audio_prompt_embeds, connector_attention_mask = self.connectors(
             prompt_embeds, prompt_attention_mask, padding_side=tokenizer_padding_side
         )
-
-        _print_stats("video_text_embedding", connector_prompt_embeds)
-        _print_stats("audio_text_embedding", connector_audio_prompt_embeds)
 
         # 4. Prepare latent variables
         latent_num_frames = (num_frames - 1) // self.vae_temporal_compression_ratio + 1
@@ -1215,8 +1210,6 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
 
         # 7. Denoising loop
         with self.progress_bar(total=num_inference_steps) as progress_bar:
-            _print_stats("latents_before_loop", latents)
-            _print_stats("audio_latents_before_loop", audio_latents)
             for i, t in enumerate(timesteps):
                 if self.interrupt:
                     continue
@@ -1259,17 +1252,6 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                     )
                 noise_pred_video = noise_pred_video.float()
                 noise_pred_audio = noise_pred_audio.float()
-
-                if i == 0:
-                    _print_stats("noise_pred_video_raw", noise_pred_video)
-                    _print_stats("noise_pred_audio_raw", noise_pred_audio)
-                    if self.do_classifier_free_guidance:
-                        uncond_v, cond_v = noise_pred_video.chunk(2)
-                        uncond_a, cond_a = noise_pred_audio.chunk(2)
-                        _print_stats("noise_pred_video_raw_uncond", uncond_v)
-                        _print_stats("noise_pred_video_raw_cond", cond_v)
-                        _print_stats("noise_pred_audio_raw_uncond", uncond_a)
-                        _print_stats("noise_pred_audio_raw_cond", cond_a)
 
                 if self.do_classifier_free_guidance:
                     noise_pred_video_uncond_text, noise_pred_video = noise_pred_video.chunk(2)

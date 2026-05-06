@@ -624,6 +624,11 @@ class LTX2VideoTransformerBlock(nn.Module):
     ) -> torch.Tensor:
         batch_size = hidden_states.size(0)
 
+        def _print_stats_layer(name, tensor):
+            print(
+                f"DEBUG [BLOCK 0] {name} shape: {tensor.shape}, mean: {tensor.mean().item():.6f}, min: {tensor.min().item():.4f}, max: {tensor.max().item():.4f}, std: {tensor.std().item():.4f}"
+            )
+
         # 1. Video and Audio Self-Attention
         # 1.1. Video Self-Attention
         video_ada_params = self.get_mod_params(self.scale_shift_table, temb, batch_size)
@@ -655,8 +660,13 @@ class LTX2VideoTransformerBlock(nn.Module):
         if self.audio_cross_attn_adaln:
             audio_shift_text_q, audio_scale_text_q, audio_gate_text_q = audio_ada_params[6:9]
 
+        if layer_id == 0:
+            _print_stats_layer("audio_in", audio_hidden_states)
+
         norm_audio_hidden_states = self.audio_norm1(audio_hidden_states)
         norm_audio_hidden_states = norm_audio_hidden_states * (1 + audio_scale_msa) + audio_shift_msa
+        if layer_id == 0:
+            _print_stats_layer("audio_norm1_out", norm_audio_hidden_states)
 
         audio_self_attn_args = {
             "hidden_states": norm_audio_hidden_states,
@@ -669,7 +679,11 @@ class LTX2VideoTransformerBlock(nn.Module):
             audio_self_attn_args["all_perturbed"] = all_perturbed
 
         attn_audio_hidden_states = self.audio_attn1(**audio_self_attn_args)
+        if layer_id == 0:
+            _print_stats_layer("audio_attn1_out", attn_audio_hidden_states)
         audio_hidden_states = audio_hidden_states + attn_audio_hidden_states * audio_gate_msa
+        if layer_id == 0:
+            _print_stats_layer("audio_attn1_residual", audio_hidden_states)
 
         # 2. Video and Audio Cross-Attention with the text embeddings (Q: Video or Audio; K,V: Text)
         if self.cross_attn_adaln:
@@ -704,6 +718,8 @@ class LTX2VideoTransformerBlock(nn.Module):
             norm_audio_hidden_states = norm_audio_hidden_states * (1 + audio_scale_text_q) + audio_shift_text_q
         if self.cross_attn_adaln:
             audio_encoder_hidden_states = audio_encoder_hidden_states * (1 + audio_scale_text_kv) + audio_shift_text_kv
+        if layer_id == 0:
+            _print_stats_layer("audio_norm2_out", norm_audio_hidden_states)
 
         attn_audio_hidden_states = self.audio_attn2(
             norm_audio_hidden_states,
@@ -713,12 +729,18 @@ class LTX2VideoTransformerBlock(nn.Module):
         )
         if self.audio_cross_attn_adaln:
             attn_audio_hidden_states = attn_audio_hidden_states * audio_gate_text_q
+        if layer_id == 0:
+            _print_stats_layer("audio_attn2_out", attn_audio_hidden_states)
         audio_hidden_states = audio_hidden_states + attn_audio_hidden_states
+        if layer_id == 0:
+            _print_stats_layer("audio_attn2_residual", audio_hidden_states)
 
         # 3. Audio-to-Video (a2v) and Video-to-Audio (v2a) Cross-Attention
         if use_a2v_cross_attention or use_v2a_cross_attention:
             norm_hidden_states = self.audio_to_video_norm(hidden_states)
             norm_audio_hidden_states = self.video_to_audio_norm(audio_hidden_states)
+            if layer_id == 0:
+                _print_stats_layer("audio_v2a_norm_out", norm_audio_hidden_states)
 
             # 3.1. Combine global and per-layer cross attention modulation parameters
             # Video
@@ -778,8 +800,11 @@ class LTX2VideoTransformerBlock(nn.Module):
                     key_rotary_emb=ca_video_rotary_emb,
                     attention_mask=v2a_cross_attention_mask,
                 )
-
+                if layer_id == 0:
+                    _print_stats_layer("audio_v2a_attn_out", v2a_attn_hidden_states)
                 audio_hidden_states = audio_hidden_states + v2a_gate * v2a_attn_hidden_states
+                if layer_id == 0:
+                    _print_stats_layer("audio_v2a_residual", audio_hidden_states)
 
         # 4. Feedforward
         norm_hidden_states = self.norm3(hidden_states) * (1 + scale_mlp) + shift_mlp
@@ -787,8 +812,14 @@ class LTX2VideoTransformerBlock(nn.Module):
         hidden_states = hidden_states + ff_output * gate_mlp
 
         norm_audio_hidden_states = self.audio_norm3(audio_hidden_states) * (1 + audio_scale_mlp) + audio_shift_mlp
+        if layer_id == 0:
+            _print_stats_layer("audio_norm3_out", norm_audio_hidden_states)
         audio_ff_output = self.audio_ff(norm_audio_hidden_states)
+        if layer_id == 0:
+            _print_stats_layer("audio_ff_out", audio_ff_output)
         audio_hidden_states = audio_hidden_states + audio_ff_output * audio_gate_mlp
+        if layer_id == 0:
+            _print_stats_layer("audio_block_out", audio_hidden_states)
 
         return hidden_states, audio_hidden_states
 

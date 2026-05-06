@@ -1252,6 +1252,7 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                         use_cross_timestep=use_cross_timestep,
                         attention_kwargs=attention_kwargs,
                         return_dict=False,
+                        step_index=i,
                     )
                 noise_pred_video = noise_pred_video.float()
                 noise_pred_audio = noise_pred_audio.float()
@@ -1325,6 +1326,7 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                             use_cross_timestep=use_cross_timestep,
                             attention_kwargs=attention_kwargs,
                             return_dict=False,
+                            step_index=i,
                         )
                     noise_pred_video_uncond_stg = noise_pred_video_uncond_stg.float()
                     noise_pred_audio_uncond_stg = noise_pred_audio_uncond_stg.float()
@@ -1365,6 +1367,7 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                             use_cross_timestep=use_cross_timestep,
                             attention_kwargs=attention_kwargs,
                             return_dict=False,
+                            step_index=i,
                         )
                     noise_pred_video_uncond_modality = noise_pred_video_uncond_modality.float()
                     noise_pred_audio_uncond_modality = noise_pred_audio_uncond_modality.float()

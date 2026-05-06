@@ -1092,6 +1092,9 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
             prompt_embeds, prompt_attention_mask, padding_side=tokenizer_padding_side
         )
 
+        _print_stats("video_text_embedding", connector_prompt_embeds)
+        _print_stats("audio_text_embedding", connector_audio_prompt_embeds)
+
         # 4. Prepare latent variables
         latent_num_frames = (num_frames - 1) // self.vae_temporal_compression_ratio + 1
         latent_height = height // self.vae_spatial_compression_ratio

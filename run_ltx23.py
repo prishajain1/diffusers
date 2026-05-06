@@ -44,21 +44,7 @@ audio_latents = torch.load(os.path.join(home_dir, "audio_latents_jax.pt")).to(de
 print(f"Loaded latents shape: {latents.shape}")
 print(f"Loaded audio_latents shape: {audio_latents.shape}")
 
-print(f"WEIGHT DEBUG: block 0 to_q weight mean: {pipe.transformer.transformer_blocks[0].attn1.to_q.weight.mean().item():.6f}")
 
-# Video-to-Audio Attention weights
-v2a = pipe.transformer.transformer_blocks[0].video_to_audio_attn
-print(f"WEIGHT DEBUG: block 0 v2a to_q mean: {v2a.to_q.weight.mean().item():.6f}, std: {v2a.to_q.weight.std().item():.6f}")
-print(f"WEIGHT DEBUG: block 0 v2a to_k mean: {v2a.to_k.weight.mean().item():.6f}, std: {v2a.to_k.weight.std().item():.6f}")
-print(f"WEIGHT DEBUG: block 0 v2a to_v mean: {v2a.to_v.weight.mean().item():.6f}, std: {v2a.to_v.weight.std().item():.6f}")
-print(f"WEIGHT DEBUG: block 0 v2a to_out mean: {v2a.to_out[0].weight.mean().item():.6f}, std: {v2a.to_out[0].weight.std().item():.6f}")
-
-# Audio-to-Video Attention weights
-a2v = pipe.transformer.transformer_blocks[0].audio_to_video_attn
-print(f"WEIGHT DEBUG: block 0 a2v to_q mean: {a2v.to_q.weight.mean().item():.6f}, std: {a2v.to_q.weight.std().item():.6f}")
-print(f"WEIGHT DEBUG: block 0 a2v to_k mean: {a2v.to_k.weight.mean().item():.6f}, std: {a2v.to_k.weight.std().item():.6f}")
-print(f"WEIGHT DEBUG: block 0 a2v to_v mean: {a2v.to_v.weight.mean().item():.6f}, std: {a2v.to_v.weight.std().item():.6f}")
-print(f"WEIGHT DEBUG: block 0 a2v to_out mean: {a2v.to_out[0].weight.mean().item():.6f}, std: {a2v.to_out[0].weight.std().item():.6f}")
 
 # Run inference
 print("Starting inference...")

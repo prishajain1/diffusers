@@ -1580,6 +1580,7 @@ class LTX2VideoTransformer3DModel(
                     not isolate_modalities,  # use_v2a_cross_attention
                     block_perturbation_mask,
                     block_all_perturbed,
+                    layer_id=block_idx,
                 )
             else:
                 hidden_states, audio_hidden_states = block(
@@ -1609,6 +1610,7 @@ class LTX2VideoTransformer3DModel(
                     use_v2a_cross_attention=not isolate_modalities,
                     perturbation_mask=block_perturbation_mask,
                     all_perturbed=block_all_perturbed,
+                    layer_id=block_idx,
                 )
 
         # 6. Output layers (including unpatchification)

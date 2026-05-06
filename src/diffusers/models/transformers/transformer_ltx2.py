@@ -203,11 +203,6 @@ class LTX2AudioVideoAttnProcessor:
         key = key.unflatten(2, (attn.heads, -1))
         value = value.unflatten(2, (attn.heads, -1))
 
-        if attn.query_dim == 512 and attn.cross_attention_dim == 3072:
-            print(f"DEBUG [BLOCK 0 V2A] query shape: {query.shape}, mean: {query.mean().item():.6f}, std: {query.std().item():.4f}")
-            print(f"DEBUG [BLOCK 0 V2A] key shape: {key.shape}, mean: {key.mean().item():.6f}, std: {key.std().item():.4f}")
-            print(f"DEBUG [BLOCK 0 V2A] value shape: {value.shape}, mean: {value.mean().item():.6f}, std: {value.std().item():.4f}")
-
         hidden_states = dispatch_attention_fn(
             query,
             key,
@@ -401,6 +396,28 @@ class LTX2Attention(torch.nn.Module, AttentionModuleMixin):
         key_rotary_emb: tuple[torch.Tensor, torch.Tensor] | None = None,
         **kwargs,
     ) -> torch.Tensor:
+        if self.query_dim == 512 and self.cross_attention_dim == 3072:
+            q = self.to_q(hidden_states)
+            k = self.to_k(encoder_hidden_states if encoder_hidden_states is not None else hidden_states)
+            v = self.to_v(encoder_hidden_states if encoder_hidden_states is not None else hidden_states)
+            q = self.norm_q(q)
+            k = self.norm_k(k)
+            
+            if query_rotary_emb is not None:
+                q = apply_interleaved_rotary_emb(q, query_rotary_emb)
+            if key_rotary_emb is not None:
+                k = apply_interleaved_rotary_emb(k, key_rotary_emb)
+            elif query_rotary_emb is not None:
+                k = apply_interleaved_rotary_emb(k, query_rotary_emb)
+
+            q_unf = q.unflatten(2, (self.heads, -1))
+            k_unf = k.unflatten(2, (self.heads, -1))
+            v_unf = v.unflatten(2, (self.heads, -1))
+            
+            print(f"DEBUG [BLOCK 0 V2A] query shape: {q_unf.shape}, mean: {q_unf.mean().item():.6f}, std: {q_unf.std().item():.4f}")
+            print(f"DEBUG [BLOCK 0 V2A] key shape: {k_unf.shape}, mean: {k_unf.mean().item():.6f}, std: {k_unf.std().item():.4f}")
+            print(f"DEBUG [BLOCK 0 V2A] value shape: {v_unf.shape}, mean: {v_unf.mean().item():.6f}, std: {v_unf.std().item():.4f}")
+
         attn_parameters = set(inspect.signature(self.processor.__call__).parameters.keys())
         unused_kwargs = [k for k, _ in kwargs.items() if k not in attn_parameters]
         if len(unused_kwargs) > 0:

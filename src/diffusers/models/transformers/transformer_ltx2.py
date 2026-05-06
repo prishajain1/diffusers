@@ -396,7 +396,7 @@ class LTX2Attention(torch.nn.Module, AttentionModuleMixin):
         key_rotary_emb: tuple[torch.Tensor, torch.Tensor] | None = None,
         **kwargs,
     ) -> torch.Tensor:
-        if self.query_dim == 512 and self.cross_attention_dim == 3072:
+        if self.query_dim == 2048 and self.cross_attention_dim == 4096:
             q = self.to_q(hidden_states)
             k = self.to_k(encoder_hidden_states if encoder_hidden_states is not None else hidden_states)
             v = self.to_v(encoder_hidden_states if encoder_hidden_states is not None else hidden_states)

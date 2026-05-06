@@ -63,6 +63,9 @@ with torch.no_grad():
         width=768,
         latents=latents,
         audio_latents=audio_latents,
+        guidance_rescale=0.7,
+        audio_guidance_rescale=0.7,
+        use_cross_timestep=True,
     )
 
 print("Inference completed!")

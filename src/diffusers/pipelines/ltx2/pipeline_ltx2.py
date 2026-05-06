@@ -1260,6 +1260,17 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                 noise_pred_video = noise_pred_video.float()
                 noise_pred_audio = noise_pred_audio.float()
 
+                if i == 0:
+                    _print_stats("noise_pred_video_raw", noise_pred_video)
+                    _print_stats("noise_pred_audio_raw", noise_pred_audio)
+                    if self.do_classifier_free_guidance:
+                        uncond_v, cond_v = noise_pred_video.chunk(2)
+                        uncond_a, cond_a = noise_pred_audio.chunk(2)
+                        _print_stats("noise_pred_video_raw_uncond", uncond_v)
+                        _print_stats("noise_pred_video_raw_cond", cond_v)
+                        _print_stats("noise_pred_audio_raw_uncond", uncond_a)
+                        _print_stats("noise_pred_audio_raw_cond", cond_a)
+
                 if self.do_classifier_free_guidance:
                     noise_pred_video_uncond_text, noise_pred_video = noise_pred_video.chunk(2)
                     noise_pred_video = self.convert_velocity_to_x0(latents, noise_pred_video, i, self.scheduler)
@@ -1411,9 +1422,7 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                 noise_pred_video = self.convert_x0_to_velocity(latents, noise_pred_video, i, self.scheduler)
                 noise_pred_audio = self.convert_x0_to_velocity(audio_latents, noise_pred_audio, i, audio_scheduler)
 
-                if i == 0:
-                    _print_stats("noise_pred_video_after_step", noise_pred_video)
-                    _print_stats("noise_pred_audio_after_step", noise_pred_audio)
+
 
                 # compute the previous noisy sample x_t -> x_t-1
                 latents = self.scheduler.step(noise_pred_video, t, latents, return_dict=False)[0]

@@ -203,6 +203,11 @@ class LTX2AudioVideoAttnProcessor:
         key = key.unflatten(2, (attn.heads, -1))
         value = value.unflatten(2, (attn.heads, -1))
 
+        if attn.query_dim == 512 and attn.cross_attention_dim == 3072:
+            print(f"DEBUG [BLOCK 0 V2A] query shape: {query.shape}, mean: {query.mean().item():.6f}, std: {query.std().item():.4f}")
+            print(f"DEBUG [BLOCK 0 V2A] key shape: {key.shape}, mean: {key.mean().item():.6f}, std: {key.std().item():.4f}")
+            print(f"DEBUG [BLOCK 0 V2A] value shape: {value.shape}, mean: {value.mean().item():.6f}, std: {value.std().item():.4f}")
+
         hidden_states = dispatch_attention_fn(
             query,
             key,

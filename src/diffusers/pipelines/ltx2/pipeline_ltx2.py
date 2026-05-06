@@ -1242,9 +1242,7 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                         timestep=timestep,
                         sigma=timestep,  # Used by LTX-2.3
                         encoder_attention_mask=connector_attention_mask,
-                        audio_encoder_attention_mask=connector_attention_mask,
-                        a2v_cross_attention_mask=None,
-                        v2a_cross_attention_mask=None,
+                        audio_encoder_attention_mask=None,
                         num_frames=latent_num_frames,
                         height=latent_height,
                         width=latent_width,

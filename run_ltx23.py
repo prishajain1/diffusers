@@ -75,11 +75,10 @@ from diffusers.pipelines.ltx2.export_utils import encode_video
 video_path = os.path.join(script_dir, "output_ltx23.mp4")
 print(f"Saving generated video and audio to {video_path}...")
 
-# Encode video accepts List[PIL.Image] directly for a single batch video
 encode_video(
     video=output.frames[0] if isinstance(output.frames[0], list) else output.frames,
     fps=24,
-    audio=torch.from_numpy(output.audio[0]),
+    audio=output.audio[0],
     audio_sample_rate=48000,
     output_path=video_path
 )

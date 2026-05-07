@@ -620,8 +620,6 @@ class LTX2VideoTransformerBlock(nn.Module):
         use_v2a_cross_attention: bool = True,
         perturbation_mask: torch.Tensor | None = None,
         all_perturbed: bool | None = None,
-        layer_id: int = 0,
-        step_index: int = -1,
     ) -> torch.Tensor:
         batch_size = hidden_states.size(0)
 
@@ -789,21 +787,6 @@ class LTX2VideoTransformerBlock(nn.Module):
         norm_audio_hidden_states = self.audio_norm3(audio_hidden_states) * (1 + audio_scale_mlp) + audio_shift_mlp
         audio_ff_output = self.audio_ff(norm_audio_hidden_states)
         audio_hidden_states = audio_hidden_states + audio_ff_output * audio_gate_mlp
-
-        if step_index == 0 or step_index == 39:
-            if hidden_states.size(0) == 2:
-                uncond_v, cond_v = hidden_states.chunk(2)
-                uncond_a, cond_a = audio_hidden_states.chunk(2)
-                print(f"DEBUG [BLOCK {layer_id}] video_block_out (uncond) mean: {uncond_v.mean().item():.6f}, std: {uncond_v.std().item():.4f}")
-                print(f"DEBUG [BLOCK {layer_id}] video_block_out (cond) mean: {cond_v.mean().item():.6f}, std: {cond_v.std().item():.4f}")
-                print(f"DEBUG [BLOCK {layer_id}] audio_block_out (uncond) mean: {uncond_a.mean().item():.6f}, std: {uncond_a.std().item():.4f}")
-                print(f"DEBUG [BLOCK {layer_id}] audio_block_out (cond) mean: {cond_a.mean().item():.6f}, std: {cond_a.std().item():.4f}")
-            elif not use_a2v_cross_attention:
-                print(f"DEBUG [BLOCK {layer_id}] video_block_out (isolated) mean: {hidden_states.mean().item():.6f}, std: {hidden_states.std().item():.4f}")
-                print(f"DEBUG [BLOCK {layer_id}] audio_block_out (isolated) mean: {audio_hidden_states.mean().item():.6f}, std: {audio_hidden_states.std().item():.4f}")
-            else:
-                print(f"DEBUG [BLOCK {layer_id}] video_block_out (perturbed) mean: {hidden_states.mean().item():.6f}, std: {hidden_states.std().item():.4f}")
-                print(f"DEBUG [BLOCK {layer_id}] audio_block_out (perturbed) mean: {audio_hidden_states.mean().item():.6f}, std: {audio_hidden_states.std().item():.4f}")
 
         return hidden_states, audio_hidden_states
 
@@ -1360,7 +1343,6 @@ class LTX2VideoTransformer3DModel(
         use_cross_timestep: bool = False,
         attention_kwargs: dict[str, Any] | None = None,
         return_dict: bool = True,
-        step_index: int = -1,
     ) -> torch.Tensor:
         """
         Forward pass for LTX-2.0 audiovisual video transformer.
@@ -1594,8 +1576,6 @@ class LTX2VideoTransformer3DModel(
                     not isolate_modalities,  # use_v2a_cross_attention
                     block_perturbation_mask,
                     block_all_perturbed,
-                    layer_id=block_idx,
-                    step_index=step_index,
                 )
             else:
                 hidden_states, audio_hidden_states = block(
@@ -1625,8 +1605,6 @@ class LTX2VideoTransformer3DModel(
                     use_v2a_cross_attention=not isolate_modalities,
                     perturbation_mask=block_perturbation_mask,
                     all_perturbed=block_all_perturbed,
-                    layer_id=block_idx,
-                    step_index=step_index,
                 )
 
         # 6. Output layers (including unpatchification)

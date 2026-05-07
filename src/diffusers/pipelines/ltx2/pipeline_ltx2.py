@@ -1087,6 +1087,14 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
             prompt_embeds, prompt_attention_mask, padding_side=tokenizer_padding_side
         )
 
+        # Diagnostic Transformer Isolation Test: Save PyTorch connector outputs to home directory
+        import os
+        home_dir = os.path.expanduser("~")
+        torch.save(connector_prompt_embeds.cpu(), os.path.join(home_dir, "pt_video_prompt_embeds.pt"))
+        torch.save(connector_audio_prompt_embeds.cpu(), os.path.join(home_dir, "pt_audio_prompt_embeds.pt"))
+        torch.save(connector_attention_mask.cpu(), os.path.join(home_dir, "pt_prompt_attn_mask.pt"))
+        print(f"🚨 [Diagnostic] Saved PyTorch Connector outputs to home directory.")
+
         # 4. Prepare latent variables
         latent_num_frames = (num_frames - 1) // self.vae_temporal_compression_ratio + 1
         latent_height = height // self.vae_spatial_compression_ratio
@@ -1436,13 +1444,6 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
             audio_latents, self.audio_vae.latents_mean, self.audio_vae.latents_std
         )
         audio_latents = self._unpack_audio_latents(audio_latents, audio_num_frames, num_mel_bins=latent_mel_bins)
-
-        # Diagnostic VAE Isolation Test: Save PyTorch unpacked latents to home directory
-        import os
-        home_dir = os.path.expanduser("~")
-        torch.save(latents.cpu(), os.path.join(home_dir, "unpacked_latents_pt.pt"))
-        torch.save(audio_latents.cpu(), os.path.join(home_dir, "unpacked_audio_latents_pt.pt"))
-        print(f"🚨 [Diagnostic] Saved PyTorch VAE inputs to ~/unpacked_latents_pt.pt and ~/unpacked_audio_latents_pt.pt")
 
         if output_type == "latent":
             latents = self._denormalize_latents(

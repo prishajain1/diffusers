@@ -1437,6 +1437,13 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
         )
         audio_latents = self._unpack_audio_latents(audio_latents, audio_num_frames, num_mel_bins=latent_mel_bins)
 
+        # Diagnostic VAE Isolation Test: Save PyTorch unpacked latents to home directory
+        import os
+        home_dir = os.path.expanduser("~")
+        torch.save(latents.cpu(), os.path.join(home_dir, "unpacked_latents_pt.pt"))
+        torch.save(audio_latents.cpu(), os.path.join(home_dir, "unpacked_audio_latents_pt.pt"))
+        print(f"🚨 [Diagnostic] Saved PyTorch VAE inputs to ~/unpacked_latents_pt.pt and ~/unpacked_audio_latents_pt.pt")
+
         if output_type == "latent":
             latents = self._denormalize_latents(
                 latents, self.vae.latents_mean, self.vae.latents_std, self.vae.config.scaling_factor

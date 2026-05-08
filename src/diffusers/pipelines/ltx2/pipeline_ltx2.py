@@ -1226,14 +1226,14 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                 )
                 audio_latent_model_input = audio_latent_model_input.to(prompt_embeds.dtype)
 
-                # Save PyTorch Step 0 Transformer inputs
-                if i == 0:
+                # Save PyTorch multi-step Transformer inputs
+                if i < 5:
                     import os
                     home_dir = os.path.expanduser("~")
-                    torch.save(latent_model_input.cpu(), os.path.join(home_dir, "pt_latents_step_0.pt"))
-                    torch.save(audio_latent_model_input.cpu(), os.path.join(home_dir, "pt_audio_latents_step_0.pt"))
-                    torch.save(t.cpu(), os.path.join(home_dir, "pt_timestep_step_0.pt"))
-                    print("🚨 [Diagnostic] Saved PyTorch Step 0 Transformer inputs.")
+                    torch.save(latent_model_input.cpu(), os.path.join(home_dir, f"pt_latents_step_{i}.pt"))
+                    torch.save(audio_latent_model_input.cpu(), os.path.join(home_dir, f"pt_audio_latents_step_{i}.pt"))
+                    torch.save(t.cpu(), os.path.join(home_dir, f"pt_timestep_step_{i}.pt"))
+                    print(f"🚨 [Diagnostic] Saved PyTorch Step {i} Transformer inputs.")
 
                 timestep = t.expand(latent_model_input.shape[0])
 
@@ -1264,13 +1264,13 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                 noise_pred_video = noise_pred_video.float()
                 noise_pred_audio = noise_pred_audio.float()
 
-                # Save PyTorch Step 0 Transformer outputs
-                if i == 0:
+                # Save PyTorch multi-step CFG Transformer outputs
+                if i < 5:
                     import os
                     home_dir = os.path.expanduser("~")
-                    torch.save(noise_pred_video.cpu(), os.path.join(home_dir, "pt_noise_pred_step_0.pt"))
-                    torch.save(noise_pred_audio.cpu(), os.path.join(home_dir, "pt_audio_noise_pred_step_0.pt"))
-                    print("🚨 [Diagnostic] Saved PyTorch Step 0 Transformer outputs.")
+                    torch.save(noise_pred_video.cpu(), os.path.join(home_dir, f"pt_noise_pred_cfg_step_{i}.pt"))
+                    torch.save(noise_pred_audio.cpu(), os.path.join(home_dir, f"pt_audio_noise_pred_cfg_step_{i}.pt"))
+                    print(f"🚨 [Diagnostic] Saved PyTorch Step {i} CFG Transformer outputs.")
 
                 if self.do_classifier_free_guidance:
                     noise_pred_video_uncond_text, noise_pred_video = noise_pred_video.chunk(2)
@@ -1350,7 +1350,13 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                     noise_pred_audio_uncond_stg = self.convert_velocity_to_x0(
                         audio_latents, noise_pred_audio_uncond_stg, i, audio_scheduler
                     )
-
+                    # Save PyTorch multi-step STG Transformer outputs
+                    if i < 5:
+                        import os
+                        home_dir = os.path.expanduser("~")
+                        torch.save(noise_pred_video_uncond_stg.cpu(), os.path.join(home_dir, f"pt_noise_pred_stg_step_{i}.pt"))
+                        torch.save(noise_pred_audio_uncond_stg.cpu(), os.path.join(home_dir, f"pt_audio_noise_pred_stg_step_{i}.pt"))
+                        print(f"🚨 [Diagnostic] Saved PyTorch Step {i} STG Transformer outputs.")
                     video_stg_delta = self.stg_scale * (noise_pred_video - noise_pred_video_uncond_stg)
                     audio_stg_delta = self.audio_stg_scale * (noise_pred_audio - noise_pred_audio_uncond_stg)
                 else:
@@ -1390,7 +1396,13 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                     noise_pred_audio_uncond_modality = self.convert_velocity_to_x0(
                         audio_latents, noise_pred_audio_uncond_modality, i, audio_scheduler
                     )
-
+                    # Save PyTorch multi-step MIG/Modality Isolation Transformer outputs
+                    if i < 5:
+                        import os
+                        home_dir = os.path.expanduser("~")
+                        torch.save(noise_pred_video_uncond_modality.cpu(), os.path.join(home_dir, f"pt_noise_pred_mig_step_{i}.pt"))
+                        torch.save(noise_pred_audio_uncond_modality.cpu(), os.path.join(home_dir, f"pt_audio_noise_pred_mig_step_{i}.pt"))
+                        print(f"🚨 [Diagnostic] Saved PyTorch Step {i} MIG Transformer outputs.")
                     video_modality_delta = (self.modality_scale - 1) * (
                         noise_pred_video - noise_pred_video_uncond_modality
                     )
@@ -1460,6 +1472,13 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
             audio_latents, self.audio_vae.latents_mean, self.audio_vae.latents_std
         )
         audio_latents = self._unpack_audio_latents(audio_latents, audio_num_frames, num_mel_bins=latent_mel_bins)
+
+        # Save PyTorch final unpacked latents securely
+        import os
+        home_dir = os.path.expanduser("~")
+        torch.save(latents.cpu(), os.path.join(home_dir, "pt_final_latents.pt"))
+        torch.save(audio_latents.cpu(), os.path.join(home_dir, "pt_final_audio_latents.pt"))
+        print("🚨 [Diagnostic] Saved PyTorch Final unpacked latents.")
 
         if output_type == "latent":
             latents = self._denormalize_latents(

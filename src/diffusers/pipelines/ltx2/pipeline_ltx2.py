@@ -1226,7 +1226,15 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                 )
                 audio_latent_model_input = audio_latent_model_input.to(prompt_embeds.dtype)
 
-                # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
+                # Save PyTorch Step 0 Transformer inputs
+                if i == 0:
+                    import os
+                    home_dir = os.path.expanduser("~")
+                    torch.save(latent_model_input.cpu(), os.path.join(home_dir, "pt_latents_step_0.pt"))
+                    torch.save(audio_latent_model_input.cpu(), os.path.join(home_dir, "pt_audio_latents_step_0.pt"))
+                    torch.save(t.cpu(), os.path.join(home_dir, "pt_timestep_step_0.pt"))
+                    print("🚨 [Diagnostic] Saved PyTorch Step 0 Transformer inputs.")
+
                 timestep = t.expand(latent_model_input.shape[0])
 
                 with self.transformer.cache_context("cond_uncond"):
@@ -1255,6 +1263,14 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                     )
                 noise_pred_video = noise_pred_video.float()
                 noise_pred_audio = noise_pred_audio.float()
+
+                # Save PyTorch Step 0 Transformer outputs
+                if i == 0:
+                    import os
+                    home_dir = os.path.expanduser("~")
+                    torch.save(noise_pred_video.cpu(), os.path.join(home_dir, "pt_noise_pred_step_0.pt"))
+                    torch.save(noise_pred_audio.cpu(), os.path.join(home_dir, "pt_audio_noise_pred_step_0.pt"))
+                    print("🚨 [Diagnostic] Saved PyTorch Step 0 Transformer outputs.")
 
                 if self.do_classifier_free_guidance:
                     noise_pred_video_uncond_text, noise_pred_video = noise_pred_video.chunk(2)

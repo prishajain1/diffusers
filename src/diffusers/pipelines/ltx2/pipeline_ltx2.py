@@ -1079,6 +1079,12 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
             prompt_embeds = torch.cat([negative_prompt_embeds, prompt_embeds], dim=0)
             prompt_attention_mask = torch.cat([negative_prompt_attention_mask, prompt_attention_mask], dim=0)
 
+        # Save PyTorch Gemma Continuous Embeddings to home directory
+        import os
+        home_dir = os.path.expanduser("~")
+        torch.save(prompt_embeds.cpu(), os.path.join(home_dir, "pt_gemma_embeds.pt"))
+        print(f"🚨 [Diagnostic] Saved PyTorch Gemma Continuous embeddings.")
+
         tokenizer_padding_side = "left"  # Padding side for default Gemma3-12B text encoder
         if getattr(self, "tokenizer", None) is not None:
             tokenizer_padding_side = getattr(self.tokenizer, "padding_side", "left")

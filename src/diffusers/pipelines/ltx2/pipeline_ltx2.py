@@ -1255,17 +1255,54 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                             return out
                         self.transformer.proj_in.forward = hooked_proj_in
  
-                        # Dynamic monkey-patching of Block 0's forward method
-                        orig_block0_forward = self.transformer.transformer_blocks[0].forward
+                        # Dynamic monkey-patching of Block 0 intermediate modules
+                        block0 = self.transformer.transformer_blocks[0]
+                        
+                        orig_attn1_forward = block0.attn1.forward
+                        def hooked_attn1(*args, **kwargs):
+                            out = orig_attn1_forward(*args, **kwargs)
+                            if out.shape[0] == 2:
+                                torch.save(out.cpu(), os.path.join(home_dir, "pt_block0_attn1_out.pt"))
+                                print("🚨 [Diagnostic] Hooked and saved PyTorch Block 0 attn1 Output.")
+                            return out
+                        block0.attn1.forward = hooked_attn1
+
+                        orig_attn2_forward = block0.attn2.forward
+                        def hooked_attn2(*args, **kwargs):
+                            out = orig_attn2_forward(*args, **kwargs)
+                            if out.shape[0] == 2:
+                                torch.save(out.cpu(), os.path.join(home_dir, "pt_block0_attn2_out.pt"))
+                                print("🚨 [Diagnostic] Hooked and saved PyTorch Block 0 attn2 Output.")
+                            return out
+                        block0.attn2.forward = hooked_attn2
+
+                        orig_a2v_forward = block0.audio_to_video_attn.forward
+                        def hooked_a2v(*args, **kwargs):
+                            out = orig_a2v_forward(*args, **kwargs)
+                            if out.shape[0] == 2:
+                                torch.save(out.cpu(), os.path.join(home_dir, "pt_block0_a2v_out.pt"))
+                                print("🚨 [Diagnostic] Hooked and saved PyTorch Block 0 audio_to_video_attn Output.")
+                            return out
+                        block0.audio_to_video_attn.forward = hooked_a2v
+
+                        orig_ff_forward = block0.ff.forward
+                        def hooked_ff(*args, **kwargs):
+                            out = orig_ff_forward(*args, **kwargs)
+                            if out.shape[0] == 2:
+                                torch.save(out.cpu(), os.path.join(home_dir, "pt_block0_ff_out.pt"))
+                                print("🚨 [Diagnostic] Hooked and saved PyTorch Block 0 ff Output.")
+                            return out
+                        block0.ff.forward = hooked_ff
+
+                        orig_block0_forward = block0.forward
                         def hooked_block0(*args, **kwargs):
                             out = orig_block0_forward(*args, **kwargs)
-                            # out[0] is video hidden states
                             if out[0].shape[0] == 2:
                                 torch.save(out[0].cpu(), os.path.join(home_dir, "pt_block0_video_out.pt"))
                                 torch.save(out[1].cpu(), os.path.join(home_dir, "pt_block0_audio_out.pt"))
                                 print("🚨 [Diagnostic] Hooked and saved PyTorch Block 0 Outputs (Batch 2).")
                             return out
-                        self.transformer.transformer_blocks[0].forward = hooked_block0
+                        block0.forward = hooked_block0
 
                 timestep = t.expand(latent_model_input.shape[0])
 

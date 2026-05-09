@@ -1248,19 +1248,22 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                         orig_proj_in_forward = self.transformer.proj_in.forward
                         def hooked_proj_in(x):
                             out = orig_proj_in_forward(x)
-                            torch.save(x.cpu(), os.path.join(home_dir, "pt_proj_in_in.pt"))
-                            torch.save(out.cpu(), os.path.join(home_dir, "pt_proj_in_out.pt"))
-                            print("🚨 [Diagnostic] Hooked and saved PyTorch Proj_In Input and Output.")
+                            if x.shape[0] == 2:
+                                torch.save(x.cpu(), os.path.join(home_dir, "pt_proj_in_in.pt"))
+                                torch.save(out.cpu(), os.path.join(home_dir, "pt_proj_in_out.pt"))
+                                print("🚨 [Diagnostic] Hooked and saved PyTorch Proj_In Input and Output (Batch 2).")
                             return out
                         self.transformer.proj_in.forward = hooked_proj_in
-
+ 
                         # Dynamic monkey-patching of Block 0's forward method
                         orig_block0_forward = self.transformer.transformer_blocks[0].forward
                         def hooked_block0(*args, **kwargs):
                             out = orig_block0_forward(*args, **kwargs)
-                            torch.save(out[0].cpu(), os.path.join(home_dir, "pt_block0_video_out.pt"))
-                            torch.save(out[1].cpu(), os.path.join(home_dir, "pt_block0_audio_out.pt"))
-                            print("🚨 [Diagnostic] Hooked and saved PyTorch Block 0 Outputs.")
+                            # out[0] is video hidden states
+                            if out[0].shape[0] == 2:
+                                torch.save(out[0].cpu(), os.path.join(home_dir, "pt_block0_video_out.pt"))
+                                torch.save(out[1].cpu(), os.path.join(home_dir, "pt_block0_audio_out.pt"))
+                                print("🚨 [Diagnostic] Hooked and saved PyTorch Block 0 Outputs (Batch 2).")
                             return out
                         self.transformer.transformer_blocks[0].forward = hooked_block0
 

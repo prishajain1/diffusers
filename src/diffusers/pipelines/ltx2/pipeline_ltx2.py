@@ -1244,24 +1244,24 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                     print(f"🚨 [Diagnostic] Saved PyTorch Step {i} Transformer inputs.")
                     
                     if i == 0:
-                        # Dynamic monkey-patching of proj_in
-                        orig_proj_in = self.transformer.proj_in
+                        # Dynamic monkey-patching of proj_in's forward method
+                        orig_proj_in_forward = self.transformer.proj_in.forward
                         def hooked_proj_in(x):
-                            out = orig_proj_in(x)
+                            out = orig_proj_in_forward(x)
                             torch.save(out.cpu(), os.path.join(home_dir, "pt_proj_in_out.pt"))
                             print("🚨 [Diagnostic] Hooked and saved PyTorch Proj_In Output.")
                             return out
-                        self.transformer.proj_in = hooked_proj_in
+                        self.transformer.proj_in.forward = hooked_proj_in
 
-                        # Dynamic monkey-patching of Block 0
-                        orig_block0 = self.transformer.transformer_blocks[0]
+                        # Dynamic monkey-patching of Block 0's forward method
+                        orig_block0_forward = self.transformer.transformer_blocks[0].forward
                         def hooked_block0(*args, **kwargs):
-                            out = orig_block0(*args, **kwargs)
+                            out = orig_block0_forward(*args, **kwargs)
                             torch.save(out[0].cpu(), os.path.join(home_dir, "pt_block0_video_out.pt"))
                             torch.save(out[1].cpu(), os.path.join(home_dir, "pt_block0_audio_out.pt"))
                             print("🚨 [Diagnostic] Hooked and saved PyTorch Block 0 Outputs.")
                             return out
-                        self.transformer.transformer_blocks[0] = hooked_block0
+                        self.transformer.transformer_blocks[0].forward = hooked_block0
 
                 timestep = t.expand(latent_model_input.shape[0])
 

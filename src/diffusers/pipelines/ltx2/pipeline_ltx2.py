@@ -1248,8 +1248,9 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                         orig_proj_in_forward = self.transformer.proj_in.forward
                         def hooked_proj_in(x):
                             out = orig_proj_in_forward(x)
+                            torch.save(x.cpu(), os.path.join(home_dir, "pt_proj_in_in.pt"))
                             torch.save(out.cpu(), os.path.join(home_dir, "pt_proj_in_out.pt"))
-                            print("🚨 [Diagnostic] Hooked and saved PyTorch Proj_In Output.")
+                            print("🚨 [Diagnostic] Hooked and saved PyTorch Proj_In Input and Output.")
                             return out
                         self.transformer.proj_in.forward = hooked_proj_in
 

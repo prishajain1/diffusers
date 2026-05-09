@@ -52,7 +52,7 @@ with torch.no_grad():
     output = pipe(
         prompt=prompt,
         negative_prompt=negative_prompt,
-        num_inference_steps=1,
+        num_inference_steps=40,
         guidance_scale=3.0,
         stg_scale=1.0,
         modality_scale=3.0,

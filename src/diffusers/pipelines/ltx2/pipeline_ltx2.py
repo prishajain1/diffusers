@@ -1085,6 +1085,8 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
         torch.save(prompt_embeds.cpu(), os.path.join(home_dir, "pt_gemma_embeds.pt"))
         print(f"🚨 [Diagnostic] Saved PyTorch Gemma Continuous embeddings.")
 
+
+
         tokenizer_padding_side = "left"  # Padding side for default Gemma3-12B text encoder
         if getattr(self, "tokenizer", None) is not None:
             tokenizer_padding_side = getattr(self.tokenizer, "padding_side", "left")
@@ -1232,8 +1234,8 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                 )
                 audio_latent_model_input = audio_latent_model_input.to(prompt_embeds.dtype)
 
-                # Save PyTorch multi-step Transformer inputs
-                if i < 5:
+                # Save PyTorch multi-step Transformer inputs (all steps)
+                if True:
                     import os
                     home_dir = os.path.expanduser("~")
                     torch.save(latent_model_input.cpu(), os.path.join(home_dir, f"pt_latents_step_{i}.pt"))
@@ -1270,8 +1272,8 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                 noise_pred_video = noise_pred_video.float()
                 noise_pred_audio = noise_pred_audio.float()
 
-                # Save PyTorch multi-step CFG Transformer outputs
-                if i < 5:
+                # Save PyTorch multi-step CFG Transformer outputs (all steps)
+                if True:
                     import os
                     home_dir = os.path.expanduser("~")
                     torch.save(noise_pred_video.cpu(), os.path.join(home_dir, f"pt_noise_pred_cfg_step_{i}.pt"))
@@ -1356,8 +1358,8 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                     noise_pred_audio_uncond_stg = self.convert_velocity_to_x0(
                         audio_latents, noise_pred_audio_uncond_stg, i, audio_scheduler
                     )
-                    # Save PyTorch multi-step STG Transformer outputs
-                    if i < 5:
+                    # Save PyTorch multi-step STG Transformer outputs (all steps)
+                    if True:
                         import os
                         home_dir = os.path.expanduser("~")
                         torch.save(noise_pred_video_uncond_stg.cpu(), os.path.join(home_dir, f"pt_noise_pred_stg_step_{i}.pt"))
@@ -1402,8 +1404,8 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                     noise_pred_audio_uncond_modality = self.convert_velocity_to_x0(
                         audio_latents, noise_pred_audio_uncond_modality, i, audio_scheduler
                     )
-                    # Save PyTorch multi-step MIG/Modality Isolation Transformer outputs
-                    if i < 5:
+                    # Save PyTorch multi-step MIG/Modality Isolation Transformer outputs (all steps)
+                    if True:
                         import os
                         home_dir = os.path.expanduser("~")
                         torch.save(noise_pred_video_uncond_modality.cpu(), os.path.join(home_dir, f"pt_noise_pred_mig_step_{i}.pt"))
@@ -1512,17 +1514,41 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                 ]
                 latents = (1 - decode_noise_scale) * latents + decode_noise_scale * noise
 
+            # Save VAE inputs (unpacked and denormalized)
+            torch.save(latents.cpu(), os.path.join(home_dir, "pt_vae_input_unpacked_denormalized.pt"))
+
             latents = self._denormalize_latents(
                 latents, self.vae.latents_mean, self.vae.latents_std, self.vae.config.scaling_factor
             )
 
+            # Save VAE input (normalized/rescaled input directly before vae.decode)
+            torch.save(latents.cpu(), os.path.join(home_dir, "pt_vae_input_normalized.pt"))
+
             latents = latents.to(self.vae.dtype)
             video = self.vae.decode(latents, timestep, return_dict=False)[0]
+
+            # Save VAE raw decoded output
+            torch.save(video.cpu(), os.path.join(home_dir, "pt_vae_output_decoded.pt"))
+
             video = self.video_processor.postprocess_video(video, output_type=output_type)
+
+            # Save final postprocessed video
+            torch.save(video, os.path.join(home_dir, "pt_vae_output_postprocessed.pt"))
+
+            # Save Audio VAE inputs
+            torch.save(audio_latents.cpu(), os.path.join(home_dir, "pt_audio_vae_input_unpacked.pt"))
 
             audio_latents = audio_latents.to(self.audio_vae.dtype)
             generated_mel_spectrograms = self.audio_vae.decode(audio_latents, return_dict=False)[0]
+
+            # Save Audio VAE decoded output / Vocoder input
+            torch.save(generated_mel_spectrograms.cpu(), os.path.join(home_dir, "pt_audio_vae_output_decoded.pt"))
+            torch.save(generated_mel_spectrograms.cpu(), os.path.join(home_dir, "pt_vocoder_input.pt"))
+
             audio = self.vocoder(generated_mel_spectrograms)
+
+            # Save Vocoder output
+            torch.save(audio.cpu(), os.path.join(home_dir, "pt_vocoder_output.pt"))
 
         # Offload all models
         self.maybe_free_model_hooks()

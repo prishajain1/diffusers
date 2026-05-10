@@ -1236,14 +1236,17 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                     torch.save(x[1:2].cpu(), os.path.join(home_dir, f"pt_proj_in_in_cond_step_{step_idx}.pt"))
                     torch.save(out[0:1].cpu(), os.path.join(home_dir, f"pt_proj_in_out_uncond_step_{step_idx}.pt"))
                     torch.save(out[1:2].cpu(), os.path.join(home_dir, f"pt_proj_in_out_cond_step_{step_idx}.pt"))
+                    print(f"   ⚡ [Diagnostic] Saved Step {step_idx} proj_in (uncond/cond)", flush=True)
                 else:
                     # STG or MIG Pass
                     if pass_idx == 0:
                         torch.save(x.cpu(), os.path.join(home_dir, f"pt_proj_in_in_perturb_step_{step_idx}.pt"))
                         torch.save(out.cpu(), os.path.join(home_dir, f"pt_proj_in_out_perturb_step_{step_idx}.pt"))
+                        print(f"   ⚡ [Diagnostic] Saved Step {step_idx} proj_in (perturb)", flush=True)
                     elif pass_idx == 1:
                         torch.save(x.cpu(), os.path.join(home_dir, f"pt_proj_in_in_isolated_step_{step_idx}.pt"))
                         torch.save(out.cpu(), os.path.join(home_dir, f"pt_proj_in_out_isolated_step_{step_idx}.pt"))
+                        print(f"   ⚡ [Diagnostic] Saved Step {step_idx} proj_in (isolated)", flush=True)
                 return out
             self.transformer.proj_in.forward = hooked_proj_in
 
@@ -1258,11 +1261,14 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                 if out.shape[0] == 2:
                     torch.save(out[0:1].cpu(), os.path.join(home_dir, f"pt_block0_attn1_out_uncond_step_{step_idx}.pt"))
                     torch.save(out[1:2].cpu(), os.path.join(home_dir, f"pt_block0_attn1_out_cond_step_{step_idx}.pt"))
+                    print(f"   ⚡ [Diagnostic] Saved Step {step_idx} block0_attn1_out (uncond/cond)", flush=True)
                 else:
                     if pass_idx == 0:
                         torch.save(out.cpu(), os.path.join(home_dir, f"pt_block0_attn1_out_perturb_step_{step_idx}.pt"))
+                        print(f"   ⚡ [Diagnostic] Saved Step {step_idx} block0_attn1_out (perturb)", flush=True)
                     elif pass_idx == 1:
                         torch.save(out.cpu(), os.path.join(home_dir, f"pt_block0_attn1_out_isolated_step_{step_idx}.pt"))
+                        print(f"   ⚡ [Diagnostic] Saved Step {step_idx} block0_attn1_out (isolated)", flush=True)
                 return out
             block0.attn1.forward = hooked_attn1
 
@@ -1274,11 +1280,14 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                 if out.shape[0] == 2:
                     torch.save(out[0:1].cpu(), os.path.join(home_dir, f"pt_block0_attn2_out_uncond_step_{step_idx}.pt"))
                     torch.save(out[1:2].cpu(), os.path.join(home_dir, f"pt_block0_attn2_out_cond_step_{step_idx}.pt"))
+                    print(f"   ⚡ [Diagnostic] Saved Step {step_idx} block0_attn2_out (uncond/cond)", flush=True)
                 else:
                     if pass_idx == 0:
                         torch.save(out.cpu(), os.path.join(home_dir, f"pt_block0_attn2_out_perturb_step_{step_idx}.pt"))
+                        print(f"   ⚡ [Diagnostic] Saved Step {step_idx} block0_attn2_out (perturb)", flush=True)
                     elif pass_idx == 1:
                         torch.save(out.cpu(), os.path.join(home_dir, f"pt_block0_attn2_out_isolated_step_{step_idx}.pt"))
+                        print(f"   ⚡ [Diagnostic] Saved Step {step_idx} block0_attn2_out (isolated)", flush=True)
                 return out
             block0.attn2.forward = hooked_attn2
 
@@ -1290,11 +1299,14 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                 if out.shape[0] == 2:
                     torch.save(out[0:1].cpu(), os.path.join(home_dir, f"pt_block0_a2v_out_uncond_step_{step_idx}.pt"))
                     torch.save(out[1:2].cpu(), os.path.join(home_dir, f"pt_block0_a2v_out_cond_step_{step_idx}.pt"))
+                    print(f"   ⚡ [Diagnostic] Saved Step {step_idx} block0_a2v_out (uncond/cond)", flush=True)
                 else:
                     if pass_idx == 0:
                         torch.save(out.cpu(), os.path.join(home_dir, f"pt_block0_a2v_out_perturb_step_{step_idx}.pt"))
+                        print(f"   ⚡ [Diagnostic] Saved Step {step_idx} block0_a2v_out (perturb)", flush=True)
                     elif pass_idx == 1:
                         torch.save(out.cpu(), os.path.join(home_dir, f"pt_block0_a2v_out_isolated_step_{step_idx}.pt"))
+                        print(f"   ⚡ [Diagnostic] Saved Step {step_idx} block0_a2v_out (isolated)", flush=True)
                 return out
             block0.audio_to_video_attn.forward = hooked_a2v
 
@@ -1306,11 +1318,14 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                 if out.shape[0] == 2:
                     torch.save(out[0:1].cpu(), os.path.join(home_dir, f"pt_block0_ff_out_uncond_step_{step_idx}.pt"))
                     torch.save(out[1:2].cpu(), os.path.join(home_dir, f"pt_block0_ff_out_cond_step_{step_idx}.pt"))
+                    print(f"   ⚡ [Diagnostic] Saved Step {step_idx} block0_ff_out (uncond/cond)", flush=True)
                 else:
                     if pass_idx == 0:
                         torch.save(out.cpu(), os.path.join(home_dir, f"pt_block0_ff_out_perturb_step_{step_idx}.pt"))
+                        print(f"   ⚡ [Diagnostic] Saved Step {step_idx} block0_ff_out (perturb)", flush=True)
                     elif pass_idx == 1:
                         torch.save(out.cpu(), os.path.join(home_dir, f"pt_block0_ff_out_isolated_step_{step_idx}.pt"))
+                        print(f"   ⚡ [Diagnostic] Saved Step {step_idx} block0_ff_out (isolated)", flush=True)
                 return out
             block0.ff.forward = hooked_ff
 
@@ -1324,13 +1339,16 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                     torch.save(out[0][1:2].cpu(), os.path.join(home_dir, f"pt_block0_video_out_cond_step_{step_idx}.pt"))
                     torch.save(out[1][0:1].cpu(), os.path.join(home_dir, f"pt_block0_audio_out_uncond_step_{step_idx}.pt"))
                     torch.save(out[1][1:2].cpu(), os.path.join(home_dir, f"pt_block0_audio_out_cond_step_{step_idx}.pt"))
+                    print(f"   ⚡ [Diagnostic] Saved Step {step_idx} block0 final outputs (uncond/cond)", flush=True)
                 else:
                     if pass_idx == 0:
                         torch.save(out[0].cpu(), os.path.join(home_dir, f"pt_block0_video_out_perturb_step_{step_idx}.pt"))
                         torch.save(out[1].cpu(), os.path.join(home_dir, f"pt_block0_audio_out_perturb_step_{step_idx}.pt"))
+                        print(f"   ⚡ [Diagnostic] Saved Step {step_idx} block0 final outputs (perturb)", flush=True)
                     elif pass_idx == 1:
                         torch.save(out[0].cpu(), os.path.join(home_dir, f"pt_block0_video_out_isolated_step_{step_idx}.pt"))
                         torch.save(out[1].cpu(), os.path.join(home_dir, f"pt_block0_audio_out_isolated_step_{step_idx}.pt"))
+                        print(f"   ⚡ [Diagnostic] Saved Step {step_idx} block0 final outputs (isolated)", flush=True)
                     
                     # Increment pass index after the complete forward pass of Block 0 is done
                     self.transformer._hook_pass_count = pass_idx + 1

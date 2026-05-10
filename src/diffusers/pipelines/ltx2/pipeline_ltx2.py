@@ -1219,11 +1219,139 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
             video_coords = video_coords.repeat((2,) + (1,) * (video_coords.ndim - 1))  # Repeat twice in batch dim
             audio_coords = audio_coords.repeat((2,) + (1,) * (audio_coords.ndim - 1))
 
+        # Dynamic monkey-patching of transformer for 4-slice sequential parity audit
+        if True:
+            import os
+            home_dir = os.path.expanduser("~")
+            
+            # 1. Hook self.transformer.proj_in
+            orig_proj_in_forward = self.transformer.proj_in.forward
+            def hooked_proj_in(x):
+                out = orig_proj_in_forward(x)
+                pass_idx = getattr(self.transformer, "_hook_pass_count", 0)
+                step_idx = self.transformer._hook_step_idx
+                if x.shape[0] == 2:
+                    # CFG Pass
+                    torch.save(x[0:1].cpu(), os.path.join(home_dir, f"pt_proj_in_in_uncond_step_{step_idx}.pt"))
+                    torch.save(x[1:2].cpu(), os.path.join(home_dir, f"pt_proj_in_in_cond_step_{step_idx}.pt"))
+                    torch.save(out[0:1].cpu(), os.path.join(home_dir, f"pt_proj_in_out_uncond_step_{step_idx}.pt"))
+                    torch.save(out[1:2].cpu(), os.path.join(home_dir, f"pt_proj_in_out_cond_step_{step_idx}.pt"))
+                else:
+                    # STG or MIG Pass
+                    if pass_idx == 0:
+                        torch.save(x.cpu(), os.path.join(home_dir, f"pt_proj_in_in_perturb_step_{step_idx}.pt"))
+                        torch.save(out.cpu(), os.path.join(home_dir, f"pt_proj_in_out_perturb_step_{step_idx}.pt"))
+                    elif pass_idx == 1:
+                        torch.save(x.cpu(), os.path.join(home_dir, f"pt_proj_in_in_isolated_step_{step_idx}.pt"))
+                        torch.save(out.cpu(), os.path.join(home_dir, f"pt_proj_in_out_isolated_step_{step_idx}.pt"))
+                return out
+            self.transformer.proj_in.forward = hooked_proj_in
+
+            # 2. Hook Block 0 intermediate modules
+            block0 = self.transformer.transformer_blocks[0]
+
+            orig_attn1_forward = block0.attn1.forward
+            def hooked_attn1(*args, **kwargs):
+                out = orig_attn1_forward(*args, **kwargs)
+                pass_idx = getattr(self.transformer, "_hook_pass_count", 0)
+                step_idx = self.transformer._hook_step_idx
+                if out.shape[0] == 2:
+                    torch.save(out[0:1].cpu(), os.path.join(home_dir, f"pt_block0_attn1_out_uncond_step_{step_idx}.pt"))
+                    torch.save(out[1:2].cpu(), os.path.join(home_dir, f"pt_block0_attn1_out_cond_step_{step_idx}.pt"))
+                else:
+                    if pass_idx == 0:
+                        torch.save(out.cpu(), os.path.join(home_dir, f"pt_block0_attn1_out_perturb_step_{step_idx}.pt"))
+                    elif pass_idx == 1:
+                        torch.save(out.cpu(), os.path.join(home_dir, f"pt_block0_attn1_out_isolated_step_{step_idx}.pt"))
+                return out
+            block0.attn1.forward = hooked_attn1
+
+            orig_attn2_forward = block0.attn2.forward
+            def hooked_attn2(*args, **kwargs):
+                out = orig_attn2_forward(*args, **kwargs)
+                pass_idx = getattr(self.transformer, "_hook_pass_count", 0)
+                step_idx = self.transformer._hook_step_idx
+                if out.shape[0] == 2:
+                    torch.save(out[0:1].cpu(), os.path.join(home_dir, f"pt_block0_attn2_out_uncond_step_{step_idx}.pt"))
+                    torch.save(out[1:2].cpu(), os.path.join(home_dir, f"pt_block0_attn2_out_cond_step_{step_idx}.pt"))
+                else:
+                    if pass_idx == 0:
+                        torch.save(out.cpu(), os.path.join(home_dir, f"pt_block0_attn2_out_perturb_step_{step_idx}.pt"))
+                    elif pass_idx == 1:
+                        torch.save(out.cpu(), os.path.join(home_dir, f"pt_block0_attn2_out_isolated_step_{step_idx}.pt"))
+                return out
+            block0.attn2.forward = hooked_attn2
+
+            orig_a2v_forward = block0.audio_to_video_attn.forward
+            def hooked_a2v(*args, **kwargs):
+                out = orig_a2v_forward(*args, **kwargs)
+                pass_idx = getattr(self.transformer, "_hook_pass_count", 0)
+                step_idx = self.transformer._hook_step_idx
+                if out.shape[0] == 2:
+                    torch.save(out[0:1].cpu(), os.path.join(home_dir, f"pt_block0_a2v_out_uncond_step_{step_idx}.pt"))
+                    torch.save(out[1:2].cpu(), os.path.join(home_dir, f"pt_block0_a2v_out_cond_step_{step_idx}.pt"))
+                else:
+                    if pass_idx == 0:
+                        torch.save(out.cpu(), os.path.join(home_dir, f"pt_block0_a2v_out_perturb_step_{step_idx}.pt"))
+                    elif pass_idx == 1:
+                        torch.save(out.cpu(), os.path.join(home_dir, f"pt_block0_a2v_out_isolated_step_{step_idx}.pt"))
+                return out
+            block0.audio_to_video_attn.forward = hooked_a2v
+
+            orig_ff_forward = block0.ff.forward
+            def hooked_ff(*args, **kwargs):
+                out = orig_ff_forward(*args, **kwargs)
+                pass_idx = getattr(self.transformer, "_hook_pass_count", 0)
+                step_idx = self.transformer._hook_step_idx
+                if out.shape[0] == 2:
+                    torch.save(out[0:1].cpu(), os.path.join(home_dir, f"pt_block0_ff_out_uncond_step_{step_idx}.pt"))
+                    torch.save(out[1:2].cpu(), os.path.join(home_dir, f"pt_block0_ff_out_cond_step_{step_idx}.pt"))
+                else:
+                    if pass_idx == 0:
+                        torch.save(out.cpu(), os.path.join(home_dir, f"pt_block0_ff_out_perturb_step_{step_idx}.pt"))
+                    elif pass_idx == 1:
+                        torch.save(out.cpu(), os.path.join(home_dir, f"pt_block0_ff_out_isolated_step_{step_idx}.pt"))
+                return out
+            block0.ff.forward = hooked_ff
+
+            orig_block0_forward = block0.forward
+            def hooked_block0(*args, **kwargs):
+                out = orig_block0_forward(*args, **kwargs)
+                pass_idx = getattr(self.transformer, "_hook_pass_count", 0)
+                step_idx = self.transformer._hook_step_idx
+                if out[0].shape[0] == 2:
+                    torch.save(out[0][0:1].cpu(), os.path.join(home_dir, f"pt_block0_video_out_uncond_step_{step_idx}.pt"))
+                    torch.save(out[0][1:2].cpu(), os.path.join(home_dir, f"pt_block0_video_out_cond_step_{step_idx}.pt"))
+                    torch.save(out[1][0:1].cpu(), os.path.join(home_dir, f"pt_block0_audio_out_uncond_step_{step_idx}.pt"))
+                    torch.save(out[1][1:2].cpu(), os.path.join(home_dir, f"pt_block0_audio_out_cond_step_{step_idx}.pt"))
+                else:
+                    if pass_idx == 0:
+                        torch.save(out[0].cpu(), os.path.join(home_dir, f"pt_block0_video_out_perturb_step_{step_idx}.pt"))
+                        torch.save(out[1].cpu(), os.path.join(home_dir, f"pt_block0_audio_out_perturb_step_{step_idx}.pt"))
+                    elif pass_idx == 1:
+                        torch.save(out[0].cpu(), os.path.join(home_dir, f"pt_block0_video_out_isolated_step_{step_idx}.pt"))
+                        torch.save(out[1].cpu(), os.path.join(home_dir, f"pt_block0_audio_out_isolated_step_{step_idx}.pt"))
+                    
+                    # Increment pass index after the complete forward pass of Block 0 is done
+                    self.transformer._hook_pass_count = pass_idx + 1
+                return out
+            block0.forward = hooked_block0
+
         # 7. Denoising loop
         with self.progress_bar(total=num_inference_steps) as progress_bar:
             for i, t in enumerate(timesteps):
                 if self.interrupt:
                     continue
+
+                # Update step index and reset pass count for our hooks
+                self.transformer._hook_step_idx = i
+                self.transformer._hook_pass_count = 0
+
+                # Save intermediate input latents and timestep at this step
+                torch.save(latents.cpu(), os.path.join(home_dir, f"pt_latents_step_{i}.pt"))
+                torch.save(audio_latents.cpu(), os.path.join(home_dir, f"pt_audio_latents_step_{i}.pt"))
+                torch.save(t.cpu(), os.path.join(home_dir, f"pt_timestep_step_{i}.pt"))
+                print(f"🚨 [Diagnostic] Saved PyTorch Step {i} latents and inputs.")
 
                 self._current_timestep = t
 
@@ -1233,76 +1361,6 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                     torch.cat([audio_latents] * 2) if self.do_classifier_free_guidance else audio_latents
                 )
                 audio_latent_model_input = audio_latent_model_input.to(prompt_embeds.dtype)
-
-                # Save PyTorch multi-step Transformer inputs (all steps)
-                if True:
-                    import os
-                    home_dir = os.path.expanduser("~")
-                    torch.save(latent_model_input.cpu(), os.path.join(home_dir, f"pt_latents_step_{i}.pt"))
-                    torch.save(audio_latent_model_input.cpu(), os.path.join(home_dir, f"pt_audio_latents_step_{i}.pt"))
-                    torch.save(t.cpu(), os.path.join(home_dir, f"pt_timestep_step_{i}.pt"))
-                    print(f"🚨 [Diagnostic] Saved PyTorch Step {i} Transformer inputs.")
-                    
-                    if i == 0:
-                        # Dynamic monkey-patching of proj_in's forward method
-                        orig_proj_in_forward = self.transformer.proj_in.forward
-                        def hooked_proj_in(x):
-                            out = orig_proj_in_forward(x)
-                            if x.shape[0] == 2 and i == 0:
-                                torch.save(x.cpu(), os.path.join(home_dir, "pt_proj_in_in.pt"))
-                                torch.save(out.cpu(), os.path.join(home_dir, "pt_proj_in_out.pt"))
-                                print("🚨 [Diagnostic] Hooked and saved PyTorch Proj_In Input and Output (Batch 2).")
-                            return out
-                        self.transformer.proj_in.forward = hooked_proj_in
- 
-                        # Dynamic monkey-patching of Block 0 intermediate modules
-                        block0 = self.transformer.transformer_blocks[0]
-                        
-                        orig_attn1_forward = block0.attn1.forward
-                        def hooked_attn1(*args, **kwargs):
-                            out = orig_attn1_forward(*args, **kwargs)
-                            if out.shape[0] == 2 and i == 0:
-                                torch.save(out.cpu(), os.path.join(home_dir, "pt_block0_attn1_out.pt"))
-                                print("🚨 [Diagnostic] Hooked and saved PyTorch Block 0 attn1 Output.")
-                            return out
-                        block0.attn1.forward = hooked_attn1
-
-                        orig_attn2_forward = block0.attn2.forward
-                        def hooked_attn2(*args, **kwargs):
-                            out = orig_attn2_forward(*args, **kwargs)
-                            if out.shape[0] == 2 and i == 0:
-                                torch.save(out.cpu(), os.path.join(home_dir, "pt_block0_attn2_out.pt"))
-                                print("🚨 [Diagnostic] Hooked and saved PyTorch Block 0 attn2 Output.")
-                            return out
-                        block0.attn2.forward = hooked_attn2
-
-                        orig_a2v_forward = block0.audio_to_video_attn.forward
-                        def hooked_a2v(*args, **kwargs):
-                            out = orig_a2v_forward(*args, **kwargs)
-                            if out.shape[0] == 2 and i == 0:
-                                torch.save(out.cpu(), os.path.join(home_dir, "pt_block0_a2v_out.pt"))
-                                print("🚨 [Diagnostic] Hooked and saved PyTorch Block 0 audio_to_video_attn Output.")
-                            return out
-                        block0.audio_to_video_attn.forward = hooked_a2v
-
-                        orig_ff_forward = block0.ff.forward
-                        def hooked_ff(*args, **kwargs):
-                            out = orig_ff_forward(*args, **kwargs)
-                            if out.shape[0] == 2 and i == 0:
-                                torch.save(out.cpu(), os.path.join(home_dir, "pt_block0_ff_out.pt"))
-                                print("🚨 [Diagnostic] Hooked and saved PyTorch Block 0 ff Output.")
-                            return out
-                        block0.ff.forward = hooked_ff
-
-                        orig_block0_forward = block0.forward
-                        def hooked_block0(*args, **kwargs):
-                            out = orig_block0_forward(*args, **kwargs)
-                            if out[0].shape[0] == 2 and i == 0:
-                                torch.save(out[0].cpu(), os.path.join(home_dir, "pt_block0_video_out.pt"))
-                                torch.save(out[1].cpu(), os.path.join(home_dir, "pt_block0_audio_out.pt"))
-                                print("🚨 [Diagnostic] Hooked and saved PyTorch Block 0 Outputs (Batch 2).")
-                            return out
-                        block0.forward = hooked_block0
 
                 timestep = t.expand(latent_model_input.shape[0])
 

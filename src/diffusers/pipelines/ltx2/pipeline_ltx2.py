@@ -1248,7 +1248,7 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                         orig_proj_in_forward = self.transformer.proj_in.forward
                         def hooked_proj_in(x):
                             out = orig_proj_in_forward(x)
-                            if x.shape[0] == 2:
+                            if x.shape[0] == 2 and i == 0:
                                 torch.save(x.cpu(), os.path.join(home_dir, "pt_proj_in_in.pt"))
                                 torch.save(out.cpu(), os.path.join(home_dir, "pt_proj_in_out.pt"))
                                 print("🚨 [Diagnostic] Hooked and saved PyTorch Proj_In Input and Output (Batch 2).")
@@ -1261,7 +1261,7 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                         orig_attn1_forward = block0.attn1.forward
                         def hooked_attn1(*args, **kwargs):
                             out = orig_attn1_forward(*args, **kwargs)
-                            if out.shape[0] == 2:
+                            if out.shape[0] == 2 and i == 0:
                                 torch.save(out.cpu(), os.path.join(home_dir, "pt_block0_attn1_out.pt"))
                                 print("🚨 [Diagnostic] Hooked and saved PyTorch Block 0 attn1 Output.")
                             return out
@@ -1270,7 +1270,7 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                         orig_attn2_forward = block0.attn2.forward
                         def hooked_attn2(*args, **kwargs):
                             out = orig_attn2_forward(*args, **kwargs)
-                            if out.shape[0] == 2:
+                            if out.shape[0] == 2 and i == 0:
                                 torch.save(out.cpu(), os.path.join(home_dir, "pt_block0_attn2_out.pt"))
                                 print("🚨 [Diagnostic] Hooked and saved PyTorch Block 0 attn2 Output.")
                             return out
@@ -1279,7 +1279,7 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                         orig_a2v_forward = block0.audio_to_video_attn.forward
                         def hooked_a2v(*args, **kwargs):
                             out = orig_a2v_forward(*args, **kwargs)
-                            if out.shape[0] == 2:
+                            if out.shape[0] == 2 and i == 0:
                                 torch.save(out.cpu(), os.path.join(home_dir, "pt_block0_a2v_out.pt"))
                                 print("🚨 [Diagnostic] Hooked and saved PyTorch Block 0 audio_to_video_attn Output.")
                             return out
@@ -1288,7 +1288,7 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                         orig_ff_forward = block0.ff.forward
                         def hooked_ff(*args, **kwargs):
                             out = orig_ff_forward(*args, **kwargs)
-                            if out.shape[0] == 2:
+                            if out.shape[0] == 2 and i == 0:
                                 torch.save(out.cpu(), os.path.join(home_dir, "pt_block0_ff_out.pt"))
                                 print("🚨 [Diagnostic] Hooked and saved PyTorch Block 0 ff Output.")
                             return out
@@ -1297,7 +1297,7 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                         orig_block0_forward = block0.forward
                         def hooked_block0(*args, **kwargs):
                             out = orig_block0_forward(*args, **kwargs)
-                            if out[0].shape[0] == 2:
+                            if out[0].shape[0] == 2 and i == 0:
                                 torch.save(out[0].cpu(), os.path.join(home_dir, "pt_block0_video_out.pt"))
                                 torch.save(out[1].cpu(), os.path.join(home_dir, "pt_block0_audio_out.pt"))
                                 print("🚨 [Diagnostic] Hooked and saved PyTorch Block 0 Outputs (Batch 2).")

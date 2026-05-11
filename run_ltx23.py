@@ -75,12 +75,12 @@ print(f"Latents shape: {latents.shape} | mean: {latents.mean().item():.6f} | min
 print(f"Audio Latents shape: {audio_latents.shape} | mean: {audio_latents.mean().item():.6f} | min: {audio_latents.min().item():.6f} | max: {audio_latents.max().item():.6f} | std: {audio_latents.std().item():.6f}", flush=True)
 
 # Run inference
-print("🚀 Starting PyTorch pipeline inference (30 steps)...", flush=True)
+print("🚀 Starting PyTorch pipeline inference (2 steps)...", flush=True)
 with torch.no_grad():
     output = pipe(
         prompt=prompt,
         negative_prompt=negative_prompt,
-        num_inference_steps=1,
+        num_inference_steps=2,
         guidance_scale=3.0,
         stg_scale=1.0,
         modality_scale=3.0,

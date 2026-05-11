@@ -71,8 +71,8 @@ else:
     torch.save(audio_latents.cpu(), pt_audio_latents_path)
     print(f"Saved {pt_latents_path} and {pt_audio_latents_path}", flush=True)
 
-print(f"Latents shape: {latents.shape} | mean: {latents.mean().item():.6f} | std: {latents.std().item():.6f}", flush=True)
-print(f"Audio Latents shape: {audio_latents.shape} | mean: {audio_latents.mean().item():.6f} | std: {audio_latents.std().item():.6f}", flush=True)
+print(f"Latents shape: {latents.shape} | mean: {latents.mean().item():.6f} | min: {latents.min().item():.6f} | max: {latents.max().item():.6f} | std: {latents.std().item():.6f}", flush=True)
+print(f"Audio Latents shape: {audio_latents.shape} | mean: {audio_latents.mean().item():.6f} | min: {audio_latents.min().item():.6f} | max: {audio_latents.max().item():.6f} | std: {audio_latents.std().item():.6f}", flush=True)
 
 # Run inference
 print("🚀 Starting PyTorch pipeline inference (30 steps)...", flush=True)
@@ -96,7 +96,6 @@ with torch.no_grad():
         use_cross_timestep=True,
         decode_timestep=0.05,
         decode_noise_scale=0.025,
-        use_bwe=True,
     )
 
 print("✅ Inference completed!", flush=True)

@@ -1244,6 +1244,7 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                     print_stats("PyTorch Transformer Input Step 0 (audio_hidden_states)", audio_latent_model_input)
                     print_stats("PyTorch Transformer Input Step 0 (timestep)", timestep)
 
+                print(f"⏳ [Step {i+1}/{num_inference_steps}] Running transformer for cond_uncond...", flush=True)
                 with self.transformer.cache_context("cond_uncond"):
                     noise_pred_video, noise_pred_audio = self.transformer(
                         hidden_states=latent_model_input,
@@ -1268,6 +1269,7 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                         attention_kwargs=attention_kwargs,
                         return_dict=False,
                     )
+                print(f"✅ [Step {i+1}/{num_inference_steps}] Finished cond_uncond.", flush=True)
                 noise_pred_video = noise_pred_video.float()
                 noise_pred_audio = noise_pred_audio.float()
 
@@ -1317,6 +1319,7 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                     noise_pred_audio = self.convert_velocity_to_x0(audio_latents, noise_pred_audio, i, audio_scheduler)
 
                 if self.do_spatio_temporal_guidance:
+                    print(f"⏳ [Step {i+1}/{num_inference_steps}] Running transformer for uncond_stg...", flush=True)
                     with self.transformer.cache_context("uncond_stg"):
                         noise_pred_video_uncond_stg, noise_pred_audio_uncond_stg = self.transformer(
                             hidden_states=latents.to(dtype=prompt_embeds.dtype),
@@ -1342,6 +1345,7 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                             attention_kwargs=attention_kwargs,
                             return_dict=False,
                         )
+                    print(f"✅ [Step {i+1}/{num_inference_steps}] Finished uncond_stg.", flush=True)
                     noise_pred_video_uncond_stg = noise_pred_video_uncond_stg.float()
                     noise_pred_audio_uncond_stg = noise_pred_audio_uncond_stg.float()
                     noise_pred_video_uncond_stg = self.convert_velocity_to_x0(
@@ -1357,6 +1361,7 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                     video_stg_delta = audio_stg_delta = 0
 
                 if self.do_modality_isolation_guidance:
+                    print(f"⏳ [Step {i+1}/{num_inference_steps}] Running transformer for uncond_modality...", flush=True)
                     with self.transformer.cache_context("uncond_modality"):
                         noise_pred_video_uncond_modality, noise_pred_audio_uncond_modality = self.transformer(
                             hidden_states=latents.to(dtype=prompt_embeds.dtype),
@@ -1382,6 +1387,7 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                             attention_kwargs=attention_kwargs,
                             return_dict=False,
                         )
+                    print(f"✅ [Step {i+1}/{num_inference_steps}] Finished uncond_modality.", flush=True)
                     noise_pred_video_uncond_modality = noise_pred_video_uncond_modality.float()
                     noise_pred_audio_uncond_modality = noise_pred_audio_uncond_modality.float()
                     noise_pred_video_uncond_modality = self.convert_velocity_to_x0(
@@ -1443,6 +1449,7 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                 # NOTE: for now duplicate scheduler for audio latents in case self.scheduler sets internal state in
                 # the step method (such as _step_index)
                 audio_latents = audio_scheduler.step(noise_pred_audio, t, audio_latents, return_dict=False)[0]
+                print(f"🎉 [Step {i+1}/{num_inference_steps}] Completed! Latents shape: {latents.shape} | Audio shape: {audio_latents.shape}", flush=True)
 
                 if callback_on_step_end is not None:
                     callback_kwargs = {}

@@ -620,10 +620,13 @@ class LTX2VideoTransformerBlock(nn.Module):
         use_v2a_cross_attention: bool = True,
         perturbation_mask: torch.Tensor | None = None,
         all_perturbed: bool | None = None,
+        block_idx: int | None = None,
     ) -> torch.Tensor:
         batch_size = hidden_states.size(0)
 
         # 1. Video and Audio Self-Attention
+        if block_idx is not None:
+            print(f"      [Block {block_idx}] -> self-attention (msa)...", flush=True)
         # 1.1. Video Self-Attention
         video_ada_params = self.get_mod_params(self.scale_shift_table, temb, batch_size)
         shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = video_ada_params[:6]
@@ -671,6 +674,8 @@ class LTX2VideoTransformerBlock(nn.Module):
         audio_hidden_states = audio_hidden_states + attn_audio_hidden_states * audio_gate_msa
 
         # 2. Video and Audio Cross-Attention with the text embeddings (Q: Video or Audio; K,V: Text)
+        if block_idx is not None:
+            print(f"      [Block {block_idx}] -> text cross-attention (ca)...", flush=True)
         if self.cross_attn_adaln:
             video_prompt_ada_params = self.get_mod_params(self.prompt_scale_shift_table, temb_prompt, batch_size)
             shift_text_kv, scale_text_kv = video_prompt_ada_params
@@ -715,6 +720,8 @@ class LTX2VideoTransformerBlock(nn.Module):
         audio_hidden_states = audio_hidden_states + attn_audio_hidden_states
 
         # 3. Audio-to-Video (a2v) and Video-to-Audio (v2a) Cross-Attention
+        if block_idx is not None:
+            print(f"      [Block {block_idx}] -> joint cross-attention (a2v/v2a)...", flush=True)
         if use_a2v_cross_attention or use_v2a_cross_attention:
             norm_hidden_states = self.audio_to_video_norm(hidden_states)
             norm_audio_hidden_states = self.video_to_audio_norm(audio_hidden_states)
@@ -781,6 +788,8 @@ class LTX2VideoTransformerBlock(nn.Module):
                 audio_hidden_states = audio_hidden_states + v2a_gate * v2a_attn_hidden_states
 
         # 4. Feedforward
+        if block_idx is not None:
+            print(f"      [Block {block_idx}] -> feedforward (mlp)...", flush=True)
         norm_hidden_states = self.norm3(hidden_states) * (1 + scale_mlp) + shift_mlp
         ff_output = self.ff(norm_hidden_states)
         hidden_states = hidden_states + ff_output * gate_mlp
@@ -1544,7 +1553,10 @@ class LTX2VideoTransformer3DModel(
         all_perturbed = torch.all(perturbation_mask == 0) if perturbation_mask is not None else False
         stg_blocks = set(spatio_temporal_guidance_blocks)
 
+        print(f"   [Transformer] Starting execution of {len(self.transformer_blocks)} blocks...", flush=True)
         for block_idx, block in enumerate(self.transformer_blocks):
+            if block_idx % 4 == 0 or block_idx == len(self.transformer_blocks) - 1:
+                print(f"   [Transformer] Running Block {block_idx} / {len(self.transformer_blocks)}...", flush=True)
             block_perturbation_mask = perturbation_mask if block_idx in stg_blocks else None
             block_all_perturbed = all_perturbed if block_idx in stg_blocks else False
 
@@ -1606,8 +1618,10 @@ class LTX2VideoTransformer3DModel(
                     use_v2a_cross_attention=not isolate_modalities,
                     perturbation_mask=block_perturbation_mask,
                     all_perturbed=block_all_perturbed,
+                    block_idx=block_idx,
                 )
 
+        print(f"   [Transformer] Finished all transformer blocks. Running output projection...", flush=True)
         # 6. Output layers (including unpatchification)
         scale_shift_values = self.scale_shift_table[None, None] + embedded_timestep[:, :, None]
         shift, scale = scale_shift_values[:, :, 0], scale_shift_values[:, :, 1]

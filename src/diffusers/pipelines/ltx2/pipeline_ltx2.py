@@ -43,6 +43,15 @@ else:
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
+
+def print_stats(name, tensor):
+    if tensor is None:
+        print(f"📊 [{name}] is None", flush=True)
+        return
+    t_f = tensor.detach().float()
+    print(f"📊 [{name}] shape: {list(tensor.shape)} | mean: {t_f.mean().item():.6f} | min: {t_f.min().item():.6f} | max: {t_f.max().item():.6f} | std: {t_f.std().item():.6f}", flush=True)
+
+
 EXAMPLE_DOC_STRING = """
     Examples:
         ```py
@@ -1075,6 +1084,9 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
             max_sequence_length=max_sequence_length,
             device=device,
         )
+        print_stats("PyTorch Text Encoder Output (prompt_embeds)", prompt_embeds)
+        print_stats("PyTorch Text Encoder Output (negative_prompt_embeds)", negative_prompt_embeds)
+
         if self.do_classifier_free_guidance:
             prompt_embeds = torch.cat([negative_prompt_embeds, prompt_embeds], dim=0)
             prompt_attention_mask = torch.cat([negative_prompt_attention_mask, prompt_attention_mask], dim=0)
@@ -1085,6 +1097,9 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
         connector_prompt_embeds, connector_audio_prompt_embeds, connector_attention_mask = self.connectors(
             prompt_embeds, prompt_attention_mask, padding_side=tokenizer_padding_side
         )
+        print_stats("PyTorch Text Connectors Output (video)", connector_prompt_embeds)
+        print_stats("PyTorch Text Connectors Output (audio)", connector_audio_prompt_embeds)
+
 
         # 4. Prepare latent variables
         latent_num_frames = (num_frames - 1) // self.vae_temporal_compression_ratio + 1
@@ -1159,6 +1174,10 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
             latents=audio_latents,
         )
 
+        print_stats("PyTorch Initial Video Latents (unpacked/packed)", latents)
+        print_stats("PyTorch Initial Audio Latents (unpacked/packed)", audio_latents)
+
+
         # 5. Prepare timesteps
         sigmas = np.linspace(1.0, 1 / num_inference_steps, num_inference_steps) if sigmas is None else sigmas
         mu = calculate_shift(
@@ -1220,6 +1239,11 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                 # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
                 timestep = t.expand(latent_model_input.shape[0])
 
+                if i == 0:
+                    print_stats("PyTorch Transformer Input Step 0 (hidden_states)", latent_model_input)
+                    print_stats("PyTorch Transformer Input Step 0 (audio_hidden_states)", audio_latent_model_input)
+                    print_stats("PyTorch Transformer Input Step 0 (timestep)", timestep)
+
                 with self.transformer.cache_context("cond_uncond"):
                     noise_pred_video, noise_pred_audio = self.transformer(
                         hidden_states=latent_model_input,
@@ -1246,6 +1270,7 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                     )
                 noise_pred_video = noise_pred_video.float()
                 noise_pred_audio = noise_pred_audio.float()
+
 
                 if self.do_classifier_free_guidance:
                     noise_pred_video_uncond_text, noise_pred_video = noise_pred_video.chunk(2)
@@ -1375,6 +1400,21 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
                 else:
                     video_modality_delta = audio_modality_delta = 0
 
+                if i == len(timesteps) - 1:
+                    print_stats("PyTorch Transformer Output Last Step - Video COND", noise_pred_video)
+                    print_stats("PyTorch Transformer Output Last Step - Video UNCOND", noise_pred_video_uncond_text)
+                    if self.do_spatio_temporal_guidance:
+                        print_stats("PyTorch Transformer Output Last Step - Video STG", noise_pred_video_uncond_stg)
+                    if self.do_modality_isolation_guidance:
+                        print_stats("PyTorch Transformer Output Last Step - Video MIG", noise_pred_video_uncond_modality)
+
+                    print_stats("PyTorch Transformer Output Last Step - Audio COND", noise_pred_audio)
+                    print_stats("PyTorch Transformer Output Last Step - Audio UNCOND", noise_pred_audio_uncond_text)
+                    if self.do_spatio_temporal_guidance:
+                        print_stats("PyTorch Transformer Output Last Step - Audio STG", noise_pred_audio_uncond_stg)
+                    if self.do_modality_isolation_guidance:
+                        print_stats("PyTorch Transformer Output Last Step - Audio MIG", noise_pred_audio_uncond_modality)
+
                 # Now apply all guidance terms
                 noise_pred_video_g = noise_pred_video + video_cfg_delta + video_stg_delta + video_modality_delta
                 noise_pred_audio_g = noise_pred_audio + audio_cfg_delta + audio_stg_delta + audio_modality_delta
@@ -1465,12 +1505,18 @@ class LTX2Pipeline(DiffusionPipeline, FromSingleFileMixin, LTX2LoraLoaderMixin):
             )
 
             latents = latents.to(self.vae.dtype)
+            print_stats("PyTorch Video VAE Input", latents)
             video = self.vae.decode(latents, timestep, return_dict=False)[0]
+            print_stats("PyTorch Video VAE Output (raw decoded)", video)
             video = self.video_processor.postprocess_video(video, output_type=output_type)
 
             audio_latents = audio_latents.to(self.audio_vae.dtype)
+            print_stats("PyTorch Audio VAE Input", audio_latents)
             generated_mel_spectrograms = self.audio_vae.decode(audio_latents, return_dict=False)[0]
+            print_stats("PyTorch Audio VAE Output (Mel Spectrograms)", generated_mel_spectrograms)
             audio = self.vocoder(generated_mel_spectrograms)
+            print_stats("PyTorch Vocoder Output (audio waveforms)", audio)
+
 
         # Offload all models
         self.maybe_free_model_hooks()
